@@ -37,7 +37,7 @@ CompileShader(GLenum shaderType, const char* shaderSrc, const char* shaderSrc2)
 	GLuint shader = glCreateShader(shaderType);
 
 #ifdef YQ2_GL3_GLES3
-	const char* version = "#version 300 es\nprecision mediump float;\n";
+	const char* version = "#version 100\nprecision mediump float;\n";
 #else // Desktop GL
 	const char* version = "#version 150\n";
 #endif
@@ -171,8 +171,8 @@ CreateShaderProgram(int numShaders, const GLuint* shaders)
 
 static const char* vertexSrc2D = MULTILINE_STRING(
 
-		in vec2 position; // GL3_ATTRIB_POSITION
-		in vec2 texCoord; // GL3_ATTRIB_TEXCOORD
+		attribute vec2 position; // GL3_ATTRIB_POSITION
+		attribute vec2 texCoord; // GL3_ATTRIB_TEXCOORD
 
 		// for UBO shared between 2D shaders
 		layout (std140) uniform uni2D
@@ -180,7 +180,7 @@ static const char* vertexSrc2D = MULTILINE_STRING(
 			mat4 trans;
 		};
 
-		out vec2 passTexCoord;
+		varying vec2 passTexCoord;
 
 		void main()
 		{
@@ -191,7 +191,7 @@ static const char* vertexSrc2D = MULTILINE_STRING(
 
 static const char* fragmentSrc2D = MULTILINE_STRING(
 
-		in vec2 passTexCoord;
+		attribute vec2 passTexCoord;
 
 		// for UBO shared between all shaders (incl. 2D)
 		layout (std140) uniform uniCommon
@@ -205,11 +205,11 @@ static const char* fragmentSrc2D = MULTILINE_STRING(
 
 		uniform sampler2D tex;
 
-		out vec4 outColor;
+		varying vec4 outColor;
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 			// the gl1 renderer used glAlphaFunc(GL_GREATER, 0.666);
 			// and glEnable(GL_ALPHA_TEST); for 2D rendering
 			// this should do the same
@@ -224,7 +224,7 @@ static const char* fragmentSrc2D = MULTILINE_STRING(
 );
 
 static const char* fragmentSrc2Dpostprocess = MULTILINE_STRING(
-		in vec2 passTexCoord;
+		attribute vec2 passTexCoord;
 
 		// for UBO shared between all shaders (incl. 2D)
 		// TODO: not needed here, remove?
@@ -240,13 +240,13 @@ static const char* fragmentSrc2Dpostprocess = MULTILINE_STRING(
 		uniform sampler2D tex;
 		uniform vec4 v_blend;
 
-		out vec4 outColor;
+		varying vec4 outColor;
 
 		void main()
 		{
 			// no gamma or intensity here, it has been applied before
 			// (this is just for postprocessing)
-			vec4 res = texture(tex, passTexCoord);
+			vec4 res = texture2D(tex, passTexCoord);
 			// apply the v_blend, usually blended as a colored quad with:
 			// glBlendEquation(GL_FUNC_ADD); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			res.rgb = v_blend.a * v_blend.rgb + (1.0 - v_blend.a)*res.rgb;
@@ -255,7 +255,7 @@ static const char* fragmentSrc2Dpostprocess = MULTILINE_STRING(
 );
 
 static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
-		in vec2 passTexCoord;
+		attribute vec2 passTexCoord;
 
 		// for UBO shared between all shaders (incl. 2D)
 		// TODO: not needed here, remove?
@@ -275,7 +275,7 @@ static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
 		uniform float time;
 		uniform vec4 v_blend;
 
-		out vec4 outColor;
+		varying vec4 outColor;
 
 		void main()
 		{
@@ -296,7 +296,7 @@ static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
 
 			// no gamma or intensity here, it has been applied before
 			// (this is just for postprocessing)
-			vec4 res = texture(tex, uv);
+			vec4 res = texture2D(tex, uv);
 			// apply the v_blend, usually blended as a colored quad with:
 			// glBlendEquation(GL_FUNC_ADD); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			res.rgb = v_blend.a * v_blend.rgb + (1.0 - v_blend.a)*res.rgb;
@@ -307,7 +307,7 @@ static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
 // 2D color only rendering, GL3_Draw_Fill(), GL3_Draw_FadeScreen()
 static const char* vertexSrc2Dcolor = MULTILINE_STRING(
 
-		in vec2 position; // GL3_ATTRIB_POSITION
+		attribute vec2 position; // GL3_ATTRIB_POSITION
 
 		// for UBO shared between 2D shaders
 		layout (std140) uniform uni2D
@@ -333,7 +333,7 @@ static const char* fragmentSrc2Dcolor = MULTILINE_STRING(
 			vec4 color;
 		};
 
-		out vec4 outColor;
+		varying vec4 outColor;
 
 		void main()
 		{
@@ -347,14 +347,14 @@ static const char* fragmentSrc2Dcolor = MULTILINE_STRING(
 
 static const char* vertexCommon3D = MULTILINE_STRING(
 
-		in vec3 position;   // GL3_ATTRIB_POSITION
-		in vec2 texCoord;   // GL3_ATTRIB_TEXCOORD
-		in vec2 lmTexCoord; // GL3_ATTRIB_LMTEXCOORD
-		in vec4 vertColor;  // GL3_ATTRIB_COLOR
-		in vec3 normal;     // GL3_ATTRIB_NORMAL
-		in uint lightFlags; // GL3_ATTRIB_LIGHTFLAGS
+		attribute vec3 position;   // GL3_ATTRIB_POSITION
+		attribute vec2 texCoord;   // GL3_ATTRIB_TEXCOORD
+		attribute vec2 lmTexCoord; // GL3_ATTRIB_LMTEXCOORD
+		attribute vec4 vertColor;  // GL3_ATTRIB_COLOR
+		attribute vec3 normal;     // GL3_ATTRIB_NORMAL
+		attribute uint lightFlags; // GL3_ATTRIB_LIGHTFLAGS
 
-		out vec2 passTexCoord;
+		varying vec2 passTexCoord;
 
 		// for UBO shared between all 3D shaders
 		layout (std140) uniform uni3D
@@ -375,9 +375,9 @@ static const char* vertexCommon3D = MULTILINE_STRING(
 
 static const char* fragmentCommon3D = MULTILINE_STRING(
 
-		in vec2 passTexCoord;
+		attribute vec2 passTexCoord;
 
-		out vec4 outColor;
+		varying vec4 outColor;
 
 		// for UBO shared between all shaders (incl. 2D)
 		layout (std140) uniform uniCommon
@@ -431,10 +431,10 @@ static const char* vertexSrc3Dlm = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from vertexCommon3D
 
-		out vec2 passLMcoord;
-		out vec3 passWorldCoord;
-		out vec3 passNormal;
-		flat out uint passLightFlags;
+		varying vec2 passLMcoord;
+		varying vec3 passWorldCoord;
+		varying vec3 passNormal;
+		flat varying uint passLightFlags;
 
 		void main()
 		{
@@ -454,10 +454,10 @@ static const char* vertexSrc3DlmFlow = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from vertexCommon3D
 
-		out vec2 passLMcoord;
-		out vec3 passWorldCoord;
-		out vec3 passNormal;
-		flat out uint passLightFlags;
+		varying vec2 passLMcoord;
+		varying vec3 passWorldCoord;
+		varying vec3 passNormal;
+		flat varying uint passLightFlags;
 
 		void main()
 		{
@@ -481,7 +481,7 @@ static const char* fragmentSrc3D = MULTILINE_STRING(
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// apply intensity and gamma
 			texel.rgb *= intensity;
@@ -504,7 +504,7 @@ static const char* fragmentSrc3Dwater = MULTILINE_STRING(
 			tc.t += sin( passTexCoord.s*0.125 + time ) * 4.0;
 			tc *= 1.0/64.0; // do this last
 
-			vec4 texel = texture(tex, tc);
+			vec4 texel = texture2D(tex, tc);
 
 			// apply intensity and gamma
 			texel.rgb *= intensity*0.5;
@@ -542,23 +542,23 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 
 		uniform vec4 lmScales[4];
 
-		in vec2 passLMcoord;
-		in vec3 passWorldCoord;
-		in vec3 passNormal;
-		flat in uint passLightFlags;
+		attribute vec2 passLMcoord;
+		attribute vec3 passWorldCoord;
+		attribute vec3 passNormal;
+		flat attribute uint passLightFlags;
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// apply intensity
 			texel.rgb *= intensity;
 
 			// apply lightmap
-			vec4 lmTex = texture(lightmap0, passLMcoord) * lmScales[0];
-			lmTex     += texture(lightmap1, passLMcoord) * lmScales[1];
-			lmTex     += texture(lightmap2, passLMcoord) * lmScales[2];
-			lmTex     += texture(lightmap3, passLMcoord) * lmScales[3];
+			vec4 lmTex = texture2D(lightmap0, passLMcoord) * lmScales[0];
+			lmTex     += texture2D(lightmap1, passLMcoord) * lmScales[1];
+			lmTex     += texture2D(lightmap2, passLMcoord) * lmScales[2];
+			lmTex     += texture2D(lightmap3, passLMcoord) * lmScales[3];
 
 			if(passLightFlags != 0u)
 			{
@@ -629,23 +629,23 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 
 		uniform vec4 lmScales[4];
 
-		in vec2 passLMcoord;
-		in vec3 passWorldCoord;
-		in vec3 passNormal;
-		flat in uint passLightFlags;
+		attribute vec2 passLMcoord;
+		attribute vec3 passWorldCoord;
+		attribute vec3 passNormal;
+		flat attribute uint passLightFlags;
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// apply intensity
 			texel.rgb *= intensity;
 
 			// apply lightmap
-			vec4 lmTex = texture(lightmap0, passLMcoord) * lmScales[0];
-			lmTex     += texture(lightmap1, passLMcoord) * lmScales[1];
-			lmTex     += texture(lightmap2, passLMcoord) * lmScales[2];
-			lmTex     += texture(lightmap3, passLMcoord) * lmScales[3];
+			vec4 lmTex = texture2D(lightmap0, passLMcoord) * lmScales[0];
+			lmTex     += texture2D(lightmap1, passLMcoord) * lmScales[1];
+			lmTex     += texture2D(lightmap2, passLMcoord) * lmScales[2];
+			lmTex     += texture2D(lightmap3, passLMcoord) * lmScales[3];
 
 			if(passLightFlags != 0u)
 			{
@@ -713,7 +713,7 @@ static const char* fragmentSrc3Dsky = MULTILINE_STRING(
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// TODO: something about GL_BLEND vs GL_ALPHATEST etc
 
@@ -732,7 +732,7 @@ static const char* fragmentSrc3Dsprite = MULTILINE_STRING(
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// apply gamma correction and intensity
 			texel.rgb *= intensity;
@@ -749,7 +749,7 @@ static const char* fragmentSrc3DspriteAlpha = MULTILINE_STRING(
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			if(texel.a <= 0.666)
 				discard;
@@ -776,7 +776,7 @@ static const char* vertexSrcAlias = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from vertexCommon3D
 
-		out vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -792,11 +792,11 @@ static const char* fragmentSrcAlias = MULTILINE_STRING(
 
 		uniform sampler2D tex;
 
-		in vec4 passColor;
+		attribute vec4 passColor;
 
 		void main()
 		{
-			vec4 texel = texture(tex, passTexCoord);
+			vec4 texel = texture2D(tex, passTexCoord);
 
 			// apply gamma correction and intensity
 			texel.rgb *= intensity;
@@ -812,7 +812,7 @@ static const char* fragmentSrcAliasColor = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		in vec4 passColor;
+		attribute vec4 passColor;
 
 		void main()
 		{
@@ -830,7 +830,7 @@ static const char* vertexSrcParticles = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from vertexCommon3D
 
-		out vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -848,7 +848,7 @@ static const char* fragmentSrcParticles = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		in vec4 passColor;
+		attribute vec4 passColor;
 
 		void main()
 		{
@@ -874,7 +874,7 @@ static const char* fragmentSrcParticlesSquare = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		in vec4 passColor;
+		attribute vec4 passColor;
 
 		void main()
 		{
@@ -938,6 +938,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	shaderInfo->shaderProgram = prog;
 	GL3_UseProgram(prog);
 
+	/*
 	// Bind the buffer object to the uniform blocks
 	GLuint blockIndex = glGetUniformBlockIndex(prog, "uniCommon");
 	if(blockIndex != GL_INVALID_INDEX)
@@ -978,6 +979,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 		R_Printf(PRINT_ALL, "WARNING: Couldn't find uniform block index 'uni2D'\n");
 		goto err_cleanup;
 	}
+	*/
 
 	shaderInfo->uniLmScalesOrTime = glGetUniformLocation(prog, "time");
 	if(shaderInfo->uniLmScalesOrTime != -1)
@@ -1036,6 +1038,7 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 
 	GL3_UseProgram(prog);
 
+	/*
 	// Bind the buffer object to the uniform blocks
 	GLuint blockIndex = glGetUniformBlockIndex(prog, "uniCommon");
 	if(blockIndex != GL_INVALID_INDEX)
@@ -1094,6 +1097,7 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 		glUniformBlockBinding(prog, blockIndex, GL3_BINDINGPOINT_UNILIGHTS);
 	}
 	// else: as uniLights is only used in the LM shaders, it's ok if it's missing
+	*/
 
 	// make sure texture is GL_TEXTURE0
 	GLint texLoc = glGetUniformLocation(prog, "tex");
@@ -1150,6 +1154,7 @@ static void initUBOs(void)
 	gl3state.uniCommonData.intensity2D = gl3_intensity_2D->value;
 	gl3state.uniCommonData.color = HMM_Vec4(1, 1, 1, 1);
 
+	/*
 	glGenBuffers(1, &gl3state.uniCommonUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniCommonUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNICOMMON, gl3state.uniCommonUBO);
@@ -1184,6 +1189,7 @@ static void initUBOs(void)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uniLightsData), &gl3state.uniLightsData, GL_DYNAMIC_DRAW);
 
 	gl3state.currentUBO = gl3state.uniLightsUBO;
+	*/
 }
 
 static qboolean createShaders(void)
@@ -1330,6 +1336,7 @@ qboolean GL3_RecreateShaders(void)
 static inline void
 updateUBO(GLuint ubo, GLsizeiptr size, void* data)
 {
+	/*
 	if(gl3state.currentUBO != ubo)
 	{
 		gl3state.currentUBO = ubo;
@@ -1364,6 +1371,7 @@ updateUBO(GLuint ubo, GLsizeiptr size, void* data)
 	memcpy(ptr, data, size);
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 #endif
+	*/
 
 	// TODO: another alternative: glMapBufferRange() and each time update a different part
 	//       of buffer asynchronously (GL_MAP_UNSYNCHRONIZED_BIT) => ringbuffer style

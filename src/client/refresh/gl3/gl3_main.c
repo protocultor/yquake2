@@ -186,6 +186,7 @@ GL3_Strings(void)
 	R_Printf(PRINT_ALL, "GL_VERSION: %s\n", gl3config.version_string);
 	R_Printf(PRINT_ALL, "GL_SHADING_LANGUAGE_VERSION: %s\n", gl3config.glsl_version_string);
 
+#ifdef GL_NUM_EXTENSIONS
 	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
 	R_Printf(PRINT_ALL, "GL_EXTENSIONS:");
@@ -194,6 +195,7 @@ GL3_Strings(void)
 		R_Printf(PRINT_ALL, " %s", (const char*)glGetStringi(GL_EXTENSIONS, i));
 	}
 	R_Printf(PRINT_ALL, "\n");
+#endif // GL_NUM_EXTENSIONS
 }
 
 static void
@@ -513,9 +515,11 @@ GL3_Init(void)
 
 	if(gl3config.anisotropic)
 	{
+#ifdef GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl3config.max_anisotropy);
 
 		R_Printf(PRINT_ALL, "Max level: %ux\n", (int)gl3config.max_anisotropy);
+#endif
 	}
 	else
 	{
@@ -713,10 +717,10 @@ GL3_BufferAndDraw3D(const gl3_3D_vtx_t* verts, int numVerts, GLenum drawMode)
 
 		// as we make sure to use a previously unused part of the buffer,
 		// doing it unsynchronized should be safe..
-		GLbitfield accessBits = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
-		void* data = glMapBufferRange(GL_ARRAY_BUFFER, curOffset, neededSize, accessBits);
-		memcpy(data, verts, neededSize);
-		glUnmapBuffer(GL_ARRAY_BUFFER);
+		// GLbitfield accessBits = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
+		// void* data = glMapBufferRange(GL_ARRAY_BUFFER, curOffset, neededSize, accessBits);
+		// memcpy(data, verts, neededSize);
+		// glUnmapBuffer(GL_ARRAY_BUFFER);
 
 		glDrawArrays(drawMode, curOffset/sizeof(gl3_3D_vtx_t), numVerts);
 
@@ -1413,11 +1417,11 @@ SetupGL(void)
 
 			// also create a renderbuffer object so the FBO has a stencil- and depth-buffer
 			glBindRenderbuffer(GL_RENDERBUFFER, gl3state.ppFBrbo);
-			glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+			// glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
 			glBindRenderbuffer(GL_RENDERBUFFER, 0);
 			// attach it to the FBO
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-			                          GL_RENDERBUFFER, gl3state.ppFBrbo);
+			// glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+			//                          GL_RENDERBUFFER, gl3state.ppFBrbo);
 
 			GLenum fbState = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 			if(fbState != GL_FRAMEBUFFER_COMPLETE)

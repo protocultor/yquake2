@@ -35,7 +35,7 @@
   // (in glad glFoo is just a #define to glad_glFoo or sth, which screws up autocompletion)
   // (you may have to configure your IDE to #define IN_IDE_PARSER, but not for building!)
 #ifdef YQ2_GL3_GLES3
-  #include <GLES3/gl32.h>
+  #include <GLES2/gl2.h>
 #else // desktop GL3
   #define GL_GLEXT_PROTOTYPES 1
   #include <GL/gl.h>
@@ -75,13 +75,13 @@
 static inline void
 qglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
 {
-	glVertexAttribPointer(index, size, type, normalized, stride, (const void*)offset);
+	// glVertexAttribPointer(index, size, type, normalized, stride, (const void*)offset);
 }
 
 static inline void
 qglVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride, GLintptr offset)
 {
-	glVertexAttribIPointer(index, size, type, stride, (void*)offset);
+	// glVertexAttribIPointer(index, size, type, stride, (void*)offset);
 }
 
 // attribute locations for vertex shaders
@@ -355,7 +355,7 @@ GL3_BindVAO(GLuint vao)
 	if(vao != gl3state.currentVAO)
 	{
 		gl3state.currentVAO = vao;
-		glBindVertexArray(vao);
+		// glBindVertexArray(vao);
 	}
 }
 

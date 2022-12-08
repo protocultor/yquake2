@@ -43,6 +43,12 @@ enum {
 	QGL_DEBUG_SEVERITY_NOTIFICATION = 0x826B
 };
 
+
+#ifndef YQ2_GL3_GLES
+  #define SVRCASE(X, STR)  case GL_DEBUG_SEVERITY_ ## X ## _ARB : severityStr = STR; break;
+  #define SRCCASE(X)  case GL_DEBUG_SOURCE_ ## X ## _ARB: sourceStr = "Source: " #X; break;
+  #define TYPECASE(X)  case GL_DEBUG_TYPE_ ## X ## _ARB: typeStr = "Type: " #X; break;
+
 /*
  * Callback function for debug output.
  */
@@ -56,54 +62,39 @@ DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
 
 	switch (severity)
 	{
-#ifdef YQ2_GL3_GLES
-  #define SVRCASE(X, STR)  case GL_DEBUG_SEVERITY_ ## X ## _KHR : severityStr = STR; break;
-#else // Desktop GL
-  #define SVRCASE(X, STR)  case GL_DEBUG_SEVERITY_ ## X ## _ARB : severityStr = STR; break;
-#endif
-
 		case QGL_DEBUG_SEVERITY_NOTIFICATION: return;
 		SVRCASE(HIGH, "Severity: High")
 		SVRCASE(MEDIUM, "Severity: Medium")
 		SVRCASE(LOW, "Severity: Low")
-#undef SVRCASE
 	}
 
 	switch (source)
 	{
-#ifdef YQ2_GL3_GLES
-  #define SRCCASE(X)  case GL_DEBUG_SOURCE_ ## X ## _KHR: sourceStr = "Source: " #X; break;
-#else
-  #define SRCCASE(X)  case GL_DEBUG_SOURCE_ ## X ## _ARB: sourceStr = "Source: " #X; break;
-#endif
 		SRCCASE(API);
 		SRCCASE(WINDOW_SYSTEM);
 		SRCCASE(SHADER_COMPILER);
 		SRCCASE(THIRD_PARTY);
 		SRCCASE(APPLICATION);
 		SRCCASE(OTHER);
-#undef SRCCASE
 	}
 
 	switch(type)
 	{
-#ifdef YQ2_GL3_GLES
-  #define TYPECASE(X)  case GL_DEBUG_TYPE_ ## X ## _KHR: typeStr = "Type: " #X; break;
-#else
-  #define TYPECASE(X)  case GL_DEBUG_TYPE_ ## X ## _ARB: typeStr = "Type: " #X; break;
-#endif
 		TYPECASE(ERROR);
 		TYPECASE(DEPRECATED_BEHAVIOR);
 		TYPECASE(UNDEFINED_BEHAVIOR);
 		TYPECASE(PORTABILITY);
 		TYPECASE(PERFORMANCE);
 		TYPECASE(OTHER);
-#undef TYPECASE
 	}
 
 	// use PRINT_ALL - this is only called with gl3_debugcontext != 0 anyway.
 	R_Printf(PRINT_ALL, "GLDBG %s %s %s: %s\n", sourceStr, typeStr, severityStr, message);
 }
+  #undef SVRCASE
+  #undef SRCCASE
+  #undef TYPECASE
+#endif
 
 // ---------
 
@@ -226,7 +217,7 @@ int GL3_PrepareForWindow(void)
 	}
 
 #ifdef YQ2_GL3_GLES3
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 #else // Desktop GL
@@ -352,7 +343,7 @@ int GL3_InitContext(void* win)
 		return false;
 	}
 #ifdef YQ2_GL3_GLES3
-	else if (GLVersion.major < 3)
+	else if (GLVersion.major < 2)
 #else // Desktop GL
 	else if (GLVersion.major < 3 || (GLVersion.major == 3 && GLVersion.minor < 2))
 #endif
@@ -367,11 +358,13 @@ int GL3_InitContext(void* win)
 	}
 
 #ifdef YQ2_GL3_GLES
-	gl3config.debug_output = GLAD_GL_KHR_debug != 0;
+	// gl3config.debug_output = GLAD_GL_KHR_debug != 0;
+	gl3config.debug_output = false;
 #else // Desktop GL
 	gl3config.debug_output = GLAD_GL_ARB_debug_output != 0;
 #endif
-	gl3config.anisotropic = GLAD_GL_EXT_texture_filter_anisotropic != 0;
+	// gl3config.anisotropic = GLAD_GL_EXT_texture_filter_anisotropic != 0;
+	gl3config.anisotropic = false;
 
 	gl3config.major_version = GLVersion.major;
 	gl3config.minor_version = GLVersion.minor;
@@ -380,11 +373,11 @@ int GL3_InitContext(void* win)
 	if (gl3_debugcontext && gl3_debugcontext->value && gl3config.debug_output)
 	{
 #ifdef YQ2_GL3_GLES
-		glDebugMessageCallbackKHR(DebugCallback, NULL);
+		// glDebugMessageCallbackKHR(DebugCallback, NULL);
 
 		// Call GL3_DebugCallback() synchronously, i.e. directly when and
 		// where the error happens (so we can get the cause in a backtrace)
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
+		// glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_KHR);
 #else // Desktop GL
 		glDebugMessageCallbackARB(DebugCallback, NULL);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);

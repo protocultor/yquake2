@@ -44,8 +44,8 @@ GL3_Draw_InitLocal(void)
 	}
 
 	// set up attribute layout for 2D textured rendering
-	glGenVertexArrays(1, &vao2D);
-	glBindVertexArray(vao2D);
+	// glGenVertexArrays(1, &vao2D);
+	// glBindVertexArray(vao2D);
 
 	glGenBuffers(1, &vbo2D);
 	GL3_BindVBO(vbo2D);
@@ -62,8 +62,8 @@ GL3_Draw_InitLocal(void)
 
 	// set up attribute layout for 2D flat color rendering
 
-	glGenVertexArrays(1, &vao2Dcolor);
-	glBindVertexArray(vao2Dcolor);
+	// glGenVertexArrays(1, &vao2Dcolor);
+	// glBindVertexArray(vao2Dcolor);
 
 	GL3_BindVBO(vbo2D); // yes, both VAOs share the same VBO
 
@@ -80,9 +80,9 @@ GL3_Draw_ShutdownLocal(void)
 {
 	glDeleteBuffers(1, &vbo2D);
 	vbo2D = 0;
-	glDeleteVertexArrays(1, &vao2D);
+	// glDeleteVertexArrays(1, &vao2D);
 	vao2D = 0;
-	glDeleteVertexArrays(1, &vao2Dcolor);
+	// glDeleteVertexArrays(1, &vao2Dcolor);
 	vao2Dcolor = 0;
 }
 
