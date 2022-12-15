@@ -529,8 +529,8 @@ VID_CheckChanges(void)
 				(strcmp(vid_renderer->string, "gl1") != 0) &&
 				(strcmp(vid_renderer->string, "soft") != 0))
 			{
-				Com_Printf("Retrying with gl3...\n");
-				Cvar_Set("vid_renderer", "gl3");
+				Com_Printf("Retrying with soft...\n");
+				Cvar_Set("vid_renderer", "soft");
 			}
 			else if (strcmp(vid_renderer->string, "gl3") == 0)
 			{

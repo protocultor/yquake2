@@ -195,6 +195,8 @@ GL3_Strings(void)
 		R_Printf(PRINT_ALL, " %s", (const char*)glGetStringi(GL_EXTENSIONS, i));
 	}
 	R_Printf(PRINT_ALL, "\n");
+#else
+	R_Printf(PRINT_ALL, "GL_EXTENSIONS: %s\n", (char *)glGetString(GL_EXTENSIONS));
 #endif // GL_NUM_EXTENSIONS
 }
 

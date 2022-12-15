@@ -37,17 +37,23 @@ CompileShader(GLenum shaderType, const char* shaderSrc, const char* shaderSrc2)
 	GLuint shader = glCreateShader(shaderType);
 
 #ifdef YQ2_GL3_GLES3
-	const char* version = "#version 100\nprecision mediump float;\n";
+	const char* version = "";
+	if (shaderType == GL_FRAGMENT_SHADER)
+	{
+		version = "#version 100\nprecision mediump float;\n";
+	}
 #else // Desktop GL
 	const char* version = "#version 150\n";
 #endif
-	const char* sources[3] = { version, shaderSrc, shaderSrc2 };
-	int numSources = shaderSrc2 != NULL ? 3 : 2;
+	// const char* sources[3] = { version, shaderSrc, shaderSrc2 };
+	const char* sources[2] = { shaderSrc, shaderSrc2 };
+	int numSources = shaderSrc2 != NULL ? 2 : 1;
 
 	glShaderSource(shader, numSources, sources, NULL);
 	glCompileShader(shader);
 	GLint status;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	eprintf("CompileShader status = %d\n", status);
 	if(status != GL_TRUE)
 	{
 		char buf[2048];
@@ -125,6 +131,7 @@ CreateShaderProgram(int numShaders, const GLuint* shaders)
 
 	GLint status;
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
+	eprintf("CreateShaderProgram status = %d\n", status);
 	if(status != GL_TRUE)
 	{
 		char buf[2048];
@@ -915,9 +922,11 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	shaderInfo->uniVblend = -1;
 
 	shaders2D[0] = CompileShader(GL_VERTEX_SHADER, vertSrc, NULL);
+	R_Printf(PRINT_ALL, "shaders2D[0] = %d\n", shaders2D[0]);
 	if(shaders2D[0] == 0)  return false;
 
 	shaders2D[1] = CompileShader(GL_FRAGMENT_SHADER, fragSrc, NULL);
+	R_Printf(PRINT_ALL, "shaders2D[1] = %d\n", shaders2D[1]);
 	if(shaders2D[1] == 0)
 	{
 		glDeleteShader(shaders2D[0]);
@@ -930,6 +939,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	glDeleteShader(shaders2D[0]);
 	glDeleteShader(shaders2D[1]);
 
+	R_Printf(PRINT_ALL, "prog = %d\n", prog);
 	if(prog == 0)
 	{
 		return false;
