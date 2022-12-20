@@ -710,7 +710,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 	if (currententity->flags & RF_DEPTHHACK)
 	{
 		/* hack the depth range to prevent view model from poking into walls */
-		glDepthRange(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
+		glDepthRangef(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
 	}
 
 	if (currententity->flags & RF_WEAPONMODEL)
@@ -819,6 +819,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 
 	glPopMatrix();
 
+	/*
 	if (gl_showbbox->value)
 	{
 		glDisable(GL_CULL_FACE);
@@ -836,6 +837,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glEnable(GL_CULL_FACE);
 	}
+	*/
 
 	if (currententity->flags & RF_WEAPONMODEL)
 	{
@@ -853,7 +855,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 
 	if (currententity->flags & RF_DEPTHHACK)
 	{
-		glDepthRange(gldepthmin, gldepthmax);
+		glDepthRangef(gldepthmin, gldepthmax);
 	}
 
 	if (gl_shadows->value &&

@@ -770,7 +770,7 @@ R_MYgluPerspective(GLdouble fovy, GLdouble aspect,
 	xmin += - gl1_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
 	xmax += - gl1_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
 
-	glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+	glFrustumf(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
 void
@@ -899,7 +899,7 @@ R_Clear(void)
 		glDepthFunc(GL_LEQUAL);
 	}
 
-	glDepthRange(gldepthmin, gldepthmax);
+	glDepthRangef(gldepthmin, gldepthmax);
 
 	if (gl_zfix->value)
 	{
@@ -954,7 +954,7 @@ R_SetGL2D(void)
 	glViewport(x, y, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, vid.width, vid.height, 0, -99999, 99999);
+	glOrthof(0, vid.width, vid.height, 0, -99999, 99999);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
@@ -1012,6 +1012,7 @@ R_RenderView(refdef_t *fd)
 					);
 				}
 				break;
+			/*	// screw stereo modes, at least for now
 			case STEREO_MODE_ROW_INTERLEAVED:
 			case STEREO_MODE_COLUMN_INTERLEAVED:
 			case STEREO_MODE_PIXEL_INTERLEAVED:
@@ -1073,6 +1074,7 @@ R_RenderView(refdef_t *fd)
 					glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 				}
 				break;
+			*/
 			default:
 				break;
 		}
@@ -1664,7 +1666,7 @@ RI_BeginFrame(float camera_separation)
 	glViewport(x, y, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, vid.width, vid.height, 0, -99999, 99999);
+	glOrthof(0, vid.width, vid.height, 0, -99999, 99999);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
@@ -1704,7 +1706,7 @@ RI_BeginFrame(float camera_separation)
 	if (gl_drawbuffer->modified)
 	{
 		gl_drawbuffer->modified = false;
-
+		/*
 		if ((gl_state.camera_separation == 0) || gl_state.stereo_mode != STEREO_MODE_OPENGL)
 		{
 			if (Q_stricmp(gl_drawbuffer->string, "GL_FRONT") == 0)
@@ -1716,6 +1718,7 @@ RI_BeginFrame(float camera_separation)
 				glDrawBuffer(GL_BACK);
 			}
 		}
+		*/
 	}
 
 	/* texturemode stuff */

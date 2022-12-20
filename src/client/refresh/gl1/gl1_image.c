@@ -81,10 +81,12 @@ typedef struct
 gltmode_t gl_alpha_modes[] = {
 	{"default", GL_RGBA},
 	{"GL_RGBA", GL_RGBA},
+	/*
 	{"GL_RGBA8", GL_RGBA8},
 	{"GL_RGB5_A1", GL_RGB5_A1},
 	{"GL_RGBA4", GL_RGBA4},
 	{"GL_RGBA2", GL_RGBA2},
+	*/
 };
 
 #define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
@@ -92,10 +94,12 @@ gltmode_t gl_alpha_modes[] = {
 gltmode_t gl_solid_modes[] = {
 	{"default", GL_RGB},
 	{"GL_RGB", GL_RGB},
+	/*
 	{"GL_RGB8", GL_RGB8},
 	{"GL_RGB5", GL_RGB5},
 	{"GL_RGB4", GL_RGB4},
 	{"GL_R3_G3_B2", GL_R3_G3_B2},
+	*/
 };
 
 #define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
@@ -665,7 +669,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 				R_BuildPalettedTexture(paletted_texture, (unsigned char *)data,
 						scaled_width, scaled_height);
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
-						scaled_width, scaled_height, 0, GL_COLOR_INDEX,
+						scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 						GL_UNSIGNED_BYTE, paletted_texture);
 			}
 			else
@@ -695,7 +699,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 		R_BuildPalettedTexture(paletted_texture, (unsigned char *)scaled,
 				scaled_width, scaled_height);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
-				scaled_width, scaled_height, 0, GL_COLOR_INDEX,
+				scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 				GL_UNSIGNED_BYTE, paletted_texture);
 	}
 	else
@@ -736,7 +740,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 				R_BuildPalettedTexture(paletted_texture, (unsigned char *)scaled,
 						scaled_width, scaled_height);
 				glTexImage2D(GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT,
-						scaled_width, scaled_height, 0, GL_COLOR_INDEX,
+						scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 						GL_UNSIGNED_BYTE, paletted_texture);
 			}
 			else
@@ -797,7 +801,7 @@ R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean is_sky)
 	if (gl_config.palettedtexture && is_sky)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
-				width, height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE,
+				width, height, 0, GL_COLOR_INDEX8_EXT, GL_UNSIGNED_BYTE,
 				data);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);

@@ -31,12 +31,14 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "../glad-gles1/include/glad/glad.h"
 #include "../../ref_shared.h"
 #include "qgl.h"
 
 
 #ifndef GL_COLOR_INDEX8_EXT
- #define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
+ // define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
+ #define GL_COLOR_INDEX8_EXT GL_RGB
 #endif
 
 #ifndef GL_EXT_texture_filter_anisotropic

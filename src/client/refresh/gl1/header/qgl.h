@@ -37,7 +37,9 @@
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl.h>
 #else
-#include <GL/gl.h>
+// include <GL/gl.h>
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #endif
 
 #ifndef APIENTRY
@@ -92,6 +94,10 @@
 #define GL_OPERAND5_ALPHA_EXT 0x859D
 #define GL_OPERAND6_ALPHA_EXT 0x859E
 #define GL_OPERAND7_ALPHA_EXT 0x859F
+#endif
+
+#ifndef GLdouble
+typedef double		GLdouble;	/* double precision float */
 #endif
 
 // =======================================================================

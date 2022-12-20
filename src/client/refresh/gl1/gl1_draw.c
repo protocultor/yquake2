@@ -498,7 +498,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 		}
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, 256, 256,
-				0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, image8);
+				0, GL_COLOR_INDEX8_EXT, GL_UNSIGNED_BYTE, image8);
 	}
 
 	// Note: gl_filter_min could be GL_*_MIPMAP_* so we can't use it for min filter here (=> no mipmaps)
