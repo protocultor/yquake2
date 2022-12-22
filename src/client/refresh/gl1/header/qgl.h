@@ -96,10 +96,6 @@
 #define GL_OPERAND7_ALPHA_EXT 0x859F
 #endif
 
-#ifndef GLdouble
-typedef double		GLdouble;	/* double precision float */
-#endif
-
 // =======================================================================
 
 /*

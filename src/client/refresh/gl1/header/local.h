@@ -38,7 +38,7 @@
 
 #ifndef GL_COLOR_INDEX8_EXT
  // define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
- #define GL_COLOR_INDEX8_EXT GL_RGB
+ #define GL_COLOR_INDEX8_EXT GL_RGBA
 #endif
 
 #ifndef GL_EXT_texture_filter_anisotropic

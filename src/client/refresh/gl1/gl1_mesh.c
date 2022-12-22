@@ -715,7 +715,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 
 	if (currententity->flags & RF_WEAPONMODEL)
 	{
-		extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+		extern void R_MYgluPerspective(float fovy, float aspect, float zNear, float zFar);
 
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();

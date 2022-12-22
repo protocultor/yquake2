@@ -756,10 +756,9 @@ R_SetupFrame(void)
 }
 
 void
-R_MYgluPerspective(GLdouble fovy, GLdouble aspect,
-		GLdouble zNear, GLdouble zFar)
+R_MYgluPerspective(float fovy, float aspect, float zNear, float zFar)
 {
-	GLdouble xmin, xmax, ymin, ymax;
+	float xmin, xmax, ymin, ymax;
 
 	ymax = zNear * tan(fovy * M_PI / 360.0);
 	ymin = -ymax;
@@ -954,14 +953,14 @@ R_SetGL2D(void)
 	glViewport(x, y, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrthof(0, vid.width, vid.height, 0, -99999, 99999);
+	glOrthof(0.0f, vid.width, vid.height, 0.0f, -99999.0f, 99999.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 	glEnable(GL_ALPHA_TEST);
-	glColor4f(1, 1, 1, 1);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
 /*
