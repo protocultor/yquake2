@@ -34,6 +34,40 @@ void Scrap_Upload(void);
 extern unsigned r_rawpalette[256];
 
 void
+Print_GL_Error(const char * function)
+{
+	const char * msg;
+	GLenum err = glGetError();
+	switch(err)
+	{
+		case GL_NO_ERROR:
+			// msg = "GL_NO_ERROR";
+			// break;
+			return;
+		case GL_INVALID_ENUM:
+			msg = "GL_INVALID_ENUM";
+			break;
+		case GL_INVALID_VALUE:
+			msg = "GL_INVALID_VALUE";
+		case GL_INVALID_OPERATION:
+			msg = "GL_INVALID_OPERATION";
+			break;
+		case GL_STACK_OVERFLOW:
+			msg = "GL_STACK_OVERFLOW";
+			break;
+		case GL_STACK_UNDERFLOW:
+			msg = "GL_STACK_UNDERFLOW";
+			break;
+		case GL_OUT_OF_MEMORY:
+			msg = "GL_OUT_OF_MEMORY";
+			break;
+		default:
+			msg = "UNKNOWN";
+	}
+	R_Printf(PRINT_ALL, "glGetError in %s: %s\n", function, msg);
+}
+
+void
 Draw_InitLocal(void)
 {
 	/* load console characters */
@@ -98,6 +132,7 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -179,6 +214,7 @@ RDraw_StretchPic(int x, int y, int w, int h, char *pic)
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -224,6 +260,7 @@ RDraw_PicScaled(int x, int y, char *pic, float factor)
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -269,6 +306,7 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -308,6 +346,7 @@ RDraw_Fill(int x, int y, int w, int h, int c)
 
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -333,6 +372,7 @@ RDraw_FadeScreen(void)
 
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -434,6 +474,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 			glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
 								cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 								img);
+			Print_GL_Error("RDraw_StretchRaw with npot");
 
 			if(img != image32)
 			{
@@ -469,6 +510,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 			glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
 					256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 					image32);
+			Print_GL_Error("RDraw_StretchRaw without npot");
 		}
 	}
 	else
@@ -499,6 +541,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, 256, 256,
 				0, GL_COLOR_INDEX8_EXT, GL_UNSIGNED_BYTE, image8);
+		Print_GL_Error("RDraw_StretchRaw with paletted texture");
 	}
 
 	// Note: gl_filter_min could be GL_*_MIPMAP_* so we can't use it for min filter here (=> no mipmaps)
@@ -513,6 +556,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error("RDraw_StretchRaw with glDrawArrays");
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );

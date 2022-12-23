@@ -338,6 +338,7 @@ R_EmitWaterPolys(msurface_t *fa)
         glVertexPointer( 3, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v );
         glTexCoordPointer( 2, GL_FLOAT, 0, tex );
         glDrawArrays( GL_TRIANGLE_FAN, 0, p->numverts );
+        Print_GL_Error(__func__);
 
         glDisableClientState( GL_VERTEX_ARRAY );
         glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -729,6 +730,7 @@ R_DrawSkyBox(void)
         glVertexPointer( 3, GL_FLOAT, 0, vtx_sky );
         glTexCoordPointer( 2, GL_FLOAT, 0, tex_sky );
         glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+        Print_GL_Error(__func__);
 
         glDisableClientState( GL_VERTEX_ARRAY );
         glDisableClientState( GL_TEXTURE_COORD_ARRAY );

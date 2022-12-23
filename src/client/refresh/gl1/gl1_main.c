@@ -246,6 +246,7 @@ R_DrawSpriteModel(entity_t *currententity, const model_t *currentmodel)
 	glVertexPointer( 3, GL_FLOAT, 0, point );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -281,21 +282,22 @@ R_DrawNullModel(entity_t *currententity)
 	glDisable(GL_TEXTURE_2D);
 	glColor4f( shadelight[0], shadelight[1], shadelight[2], 1 );
 
-    GLfloat vtxA[] = {
-        0, 0, -16,
-        16 * cos( 0 * M_PI / 2 ), 16 * sin( 0 * M_PI / 2 ), 0,
-        16 * cos( 1 * M_PI / 2 ), 16 * sin( 1 * M_PI / 2 ), 0,
-        16 * cos( 2 * M_PI / 2 ), 16 * sin( 2 * M_PI / 2 ), 0,
-        16 * cos( 3 * M_PI / 2 ), 16 * sin( 3 * M_PI / 2 ), 0,
-        16 * cos( 4 * M_PI / 2 ), 16 * sin( 4 * M_PI / 2 ), 0
-    };
+	GLfloat vtxA[] = {
+		0, 0, -16,
+		16 * cos( 0 * M_PI / 2 ), 16 * sin( 0 * M_PI / 2 ), 0,
+		16 * cos( 1 * M_PI / 2 ), 16 * sin( 1 * M_PI / 2 ), 0,
+		16 * cos( 2 * M_PI / 2 ), 16 * sin( 2 * M_PI / 2 ), 0,
+		16 * cos( 3 * M_PI / 2 ), 16 * sin( 3 * M_PI / 2 ), 0,
+		16 * cos( 4 * M_PI / 2 ), 16 * sin( 4 * M_PI / 2 ), 0
+	};
 
-    glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_VERTEX_ARRAY );
 
-    glVertexPointer( 3, GL_FLOAT, 0, vtxA );
-    glDrawArrays( GL_TRIANGLE_FAN, 0, 6 );
+	glVertexPointer( 3, GL_FLOAT, 0, vtxA );
+	glDrawArrays( GL_TRIANGLE_FAN, 0, 6 );
+	Print_GL_Error(__func__);
 
-    glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_VERTEX_ARRAY );
 
 	GLfloat vtxB[] = {
 		0, 0, 16,
@@ -310,6 +312,7 @@ R_DrawNullModel(entity_t *currententity)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtxB );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 6 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -505,6 +508,7 @@ R_DrawParticles2(int num_particles, const particle_t particles[],
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glColorPointer( 4, GL_FLOAT, 0, clr );
 	glDrawArrays( GL_TRIANGLES, 0, num_particles*3 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -569,6 +573,7 @@ R_DrawParticles(void)
 		glVertexPointer( 3, GL_FLOAT, 0, vtx );
 		glColorPointer( 4, GL_FLOAT, 0, clr );
 		glDrawArrays( GL_POINTS, 0, r_newrefdef.num_particles );
+		Print_GL_Error(__func__);
 
 		glDisableClientState( GL_VERTEX_ARRAY );
 		glDisableClientState( GL_COLOR_ARRAY );
@@ -624,6 +629,7 @@ R_PolyBlend(void)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -1454,19 +1460,6 @@ RI_Init(void)
 	gl_config.extensions_string = (char *)glGetString(GL_EXTENSIONS);
 	R_Printf(PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string);
 
-	sscanf(gl_config.version_string, "%d.%d", &gl_config.major_version, &gl_config.minor_version);
-
-	if (gl_config.major_version == 1)
-	{
-		if (gl_config.minor_version < 4)
-		{
-			QGL_Shutdown();
-			R_Printf(PRINT_ALL, "Support for OpenGL 1.4 is not available\n");
-
-			return false;
-		}
-	}
-
 	R_Printf(PRINT_ALL, "\n\nProbing for OpenGL extensions:\n");
 
 	// ----
@@ -1555,7 +1548,7 @@ RI_Init(void)
 	/* Non power of two textures */
 	R_Printf(PRINT_ALL, " - Non power of two textures: ");
 
-	if (strstr(gl_config.extensions_string, "GL_ARB_texture_non_power_of_two"))
+	if (strstr(gl_config.extensions_string, "GL_OES_texture_npot"))
 	{
 		gl_config.npottextures = true;
 		R_Printf(PRINT_ALL, "Okay\n");
@@ -1873,6 +1866,7 @@ R_DrawBeam(entity_t *e)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_STRIP, 0, NUM_BEAM_SEGS*4 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 

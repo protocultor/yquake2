@@ -49,9 +49,6 @@ R_RenderDlight(dlight_t *light)
 	unsigned int index_vtx = 3;
 	unsigned int index_clr = 0;
 
-	glEnableClientState( GL_VERTEX_ARRAY );
-	glEnableClientState( GL_COLOR_ARRAY );
-
 	clr[index_clr++] = light->color [ 0 ] * 0.2;
 	clr[index_clr++] = light->color [ 1 ] * 0.2;
 	clr[index_clr++] = light->color [ 2 ] * 0.2;
@@ -78,9 +75,13 @@ R_RenderDlight(dlight_t *light)
 		}
 	}
 
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_COLOR_ARRAY );
+
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glColorPointer( 4, GL_FLOAT, 0, clr );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 18 );
+	Print_GL_Error(__func__);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_COLOR_ARRAY );

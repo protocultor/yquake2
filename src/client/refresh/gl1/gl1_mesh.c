@@ -260,6 +260,7 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 			glTexCoordPointer(2, GL_FLOAT, 0, tex);
 			glColorPointer(4, GL_FLOAT, 0, clr);
 			glDrawArrays(type, 0, total);
+			Print_GL_Error(__func__);
 
 			glDisableClientState(GL_VERTEX_ARRAY);
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -281,8 +282,8 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 static void
 R_DrawAliasShadow(entity_t *currententity, dmdl_t *paliashdr, int posenum)
 {
-    unsigned short total;
-    GLenum type;
+	unsigned short total;
+	GLenum type;
 	int *order;
 	vec3_t point;
 	float height = 0, lheight;
@@ -333,19 +334,19 @@ R_DrawAliasShadow(entity_t *currententity, dmdl_t *paliashdr, int posenum)
 		{
 			count = -count;
 
-            type = GL_TRIANGLE_FAN;
+			type = GL_TRIANGLE_FAN;
 		}
 		else
 		{
-            type = GL_TRIANGLE_STRIP;
+			type = GL_TRIANGLE_STRIP;
 		}
 
         total = count;
 
 #ifndef _MSC_VER // we have real VLAs, so it's safe to use one in this loop
-        YQ2_VLA(GLfloat, vtx, 3*total);
+		YQ2_VLA(GLfloat, vtx, 3*total);
 #endif
-        unsigned int index_vtx = 0;
+		unsigned int index_vtx = 0;
 
 		do
 		{
@@ -356,20 +357,21 @@ R_DrawAliasShadow(entity_t *currententity, dmdl_t *paliashdr, int posenum)
 			point[1] -= shadevector[1] * (point[2] + lheight);
 			point[2] = height;
 
-            vtx[index_vtx++] = point [ 0 ];
-            vtx[index_vtx++] = point [ 1 ];
-            vtx[index_vtx++] = point [ 2 ];
+			vtx[index_vtx++] = point [ 0 ];
+			vtx[index_vtx++] = point [ 1 ];
+			vtx[index_vtx++] = point [ 2 ];
 
 			order += 3;
 		}
 		while (--count);
 
-        glEnableClientState( GL_VERTEX_ARRAY );
+		glEnableClientState( GL_VERTEX_ARRAY );
 
-        glVertexPointer( 3, GL_FLOAT, 0, vtx );
-        glDrawArrays( type, 0, total );
+		glVertexPointer( 3, GL_FLOAT, 0, vtx );
+		glDrawArrays( type, 0, total );
+		Print_GL_Error(__func__);
 
-        glDisableClientState( GL_VERTEX_ARRAY );
+		glDisableClientState( GL_VERTEX_ARRAY );
 	}
 	YQ2_VLAFREE(vtx);
 

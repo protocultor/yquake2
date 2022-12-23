@@ -208,19 +208,6 @@ int RI_InitContext(void* win)
 		return false;
 	}
 
-	/*
-	// Check if it's really OpenGL 1.4.
-	const char* glver = (char *)glGetString(GL_VERSION);
-	sscanf(glver, "%d.%d", &gl_config.major_version, &gl_config.minor_version);
-
-	if (gl_config.major_version < 1 || (gl_config.major_version == 1 && gl_config.minor_version < 4))
-	{
-		R_Printf(PRINT_ALL, "R_InitContext(): Got an OpenGL version %d.%d context - need (at least) 1.4!\n", gl_config.major_version, gl_config.minor_version);
-
-		return false;
-	}
-	*/
-
 	// Check if we've got the requested MSAA.
 	int msaa_samples = 0;
 
@@ -255,6 +242,10 @@ int RI_InitContext(void* win)
 		R_Printf(PRINT_ALL, "RI_InitContext(): ERROR: loading OpenGL ES function pointers failed!\n");
 		return false;
 	}
+
+	gl_config.major_version = GLVersion.major;
+	gl_config.minor_version = GLVersion.minor;
+	R_Printf(PRINT_ALL, "RI_InitContext(): Got an OpenGL ES version %d.%d context\n", gl_config.major_version, gl_config.minor_version);
 
 	// Window title - set here so we can display renderer name in it.
 	char title[40] = {0};
