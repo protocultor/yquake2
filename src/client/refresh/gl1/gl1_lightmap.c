@@ -71,7 +71,7 @@ LM_UploadBlock(qboolean dynamic)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, BLOCK_WIDTH,
 				height, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
 				gl_lms.lightmap_buffer);
-		Print_GL_Error("LM_UploadBlock SubImage");
+		glCheckError();
 	}
 	else
 	{
@@ -79,7 +79,7 @@ LM_UploadBlock(qboolean dynamic)
 		glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
 				BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_LIGHTMAP_FORMAT,
 				GL_UNSIGNED_BYTE, gl_lms.lightmap_buffer);
-		Print_GL_Error(__func__);
+		glCheckError();
 
 		if (++gl_lms.current_lightmap_texture == MAX_LIGHTMAPS)
 		{
@@ -280,7 +280,7 @@ LM_BeginBuildingLightmaps(model_t *m)
 	glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
 			BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_LIGHTMAP_FORMAT,
 			GL_UNSIGNED_BYTE, dummy);
-	Print_GL_Error(__func__);
+	glCheckError();
 }
 
 void

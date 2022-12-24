@@ -569,7 +569,7 @@ R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap)
 	glTexImage2D(GL_TEXTURE_2D, 0, comp, width,
 			height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 			data);
-	Print_GL_Error("R_Upload32Native");
+	glCheckError();
 	// glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
 	return samples == gl_alpha_format;
 }
@@ -672,14 +672,14 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
 						scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 						GL_UNSIGNED_BYTE, paletted_texture);
-				Print_GL_Error("R_Upload32Soft !mipmap w/qglColorTableEXT");
+				glCheckError();
 			}
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
 						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 						data);
-				Print_GL_Error("R_Upload32Soft !mipmap wo/qglColorTableEXT");
+				glCheckError();
 			}
 
 			goto done;
@@ -704,14 +704,14 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
 				scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 				GL_UNSIGNED_BYTE, paletted_texture);
-		Print_GL_Error("R_Upload32Soft w/qglColorTableEXT");
+		glCheckError();
 	}
 	else
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
 				scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 				scaled);
-		Print_GL_Error("R_Upload32Soft wo/qglColorTableEXT");
+		glCheckError();
 	}
 
 	if (mipmap)
@@ -747,13 +747,13 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 				glTexImage2D(GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT,
 						scaled_width, scaled_height, 0, GL_COLOR_INDEX8_EXT,
 						GL_UNSIGNED_BYTE, paletted_texture);
-				Print_GL_Error("R_Upload32Soft mipmap w/qglColorTableEXT");
+				glCheckError();
 			}
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
 						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
-				Print_GL_Error("R_Upload32Soft mipmap wo/qglColorTableEXT");
+				glCheckError();
 			}
 		}
 	}
@@ -810,7 +810,7 @@ R_Upload8(byte *data, int width, int height, qboolean mipmap, qboolean is_sky)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
 				width, height, 0, GL_COLOR_INDEX8_EXT, GL_UNSIGNED_BYTE,
 				data);
-		Print_GL_Error(__func__);
+		glCheckError();
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);

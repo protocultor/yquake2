@@ -79,7 +79,7 @@ R_DrawGLPoly(glpoly_t *p)
 	glVertexPointer( 3, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v );
 	glTexCoordPointer( 2, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v+3 );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, p->numverts );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -120,7 +120,7 @@ R_DrawGLFlowingPoly(msurface_t *fa)
 	glVertexPointer( 3, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, p->numverts );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -172,7 +172,7 @@ R_DrawTriangleOutlines(void)
 
 					glVertexPointer( 3, GL_FLOAT, 0, vtx );
 					glDrawArrays( GL_LINE_STRIP, 0, 4 );
-					Print_GL_Error(__func__);
+					glCheckError();
 
 					glDisableClientState( GL_VERTEX_ARRAY );
 				}
@@ -201,7 +201,7 @@ R_DrawGLPolyChain(glpoly_t *p, float soffset, float toffset)
 			glVertexPointer( 3, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v );
 			glTexCoordPointer( 2, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v+5 );
 			glDrawArrays( GL_TRIANGLE_FAN, 0, p->numverts );
-			Print_GL_Error(__func__);
+			glCheckError();
 
 			glDisableClientState( GL_VERTEX_ARRAY );
 			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -247,7 +247,7 @@ R_DrawGLPolyChain(glpoly_t *p, float soffset, float toffset)
 			glVertexPointer( 3, GL_FLOAT, VERTEXSIZE*sizeof(GLfloat), v );
 			glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 			glDrawArrays( GL_TRIANGLE_FAN, 0, p->numverts );
-			Print_GL_Error(__func__);
+			glCheckError();
 
 			glDisableClientState( GL_VERTEX_ARRAY );
 			glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -550,7 +550,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 
 			glTexSubImage2D(GL_TEXTURE_2D, 0, fa->light_s, fa->light_t,
 					smax, tmax, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, temp);
-			Print_GL_Error(__func__);
+			glCheckError();
 
 			fa->lightmapchain = gl_lms.lightmap_surfaces[fa->lightmaptexturenum];
 			gl_lms.lightmap_surfaces[fa->lightmaptexturenum] = fa;

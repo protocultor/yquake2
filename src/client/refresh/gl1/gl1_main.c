@@ -142,6 +142,41 @@ cvar_t *gl1_stereo_convergence;
 
 refimport_t ri;
 
+// For the "Debugger"
+void
+glCheckError_(const char * file, const char * function, int line)
+{
+	GLenum errorCode;
+	const char * msg;
+
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		switch(errorCode)
+		{
+			case GL_INVALID_ENUM:
+				msg = "GL_INVALID_ENUM";
+				break;
+			case GL_INVALID_VALUE:
+				msg = "GL_INVALID_VALUE";
+			case GL_INVALID_OPERATION:
+				msg = "GL_INVALID_OPERATION";
+				break;
+			case GL_STACK_OVERFLOW:
+				msg = "GL_STACK_OVERFLOW";
+				break;
+			case GL_STACK_UNDERFLOW:
+				msg = "GL_STACK_UNDERFLOW";
+				break;
+			case GL_OUT_OF_MEMORY:
+				msg = "GL_OUT_OF_MEMORY";
+				break;
+			default:
+				msg = "UNKNOWN";
+		}
+		R_Printf(PRINT_ALL, "glError: %s in %s (%s, %d)\n", msg, function, file, line);
+	}
+}
+
 /*
  * Returns true if the box is completely outside the frustom
  */
@@ -246,7 +281,7 @@ R_DrawSpriteModel(entity_t *currententity, const model_t *currentmodel)
 	glVertexPointer( 3, GL_FLOAT, 0, point );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -295,7 +330,7 @@ R_DrawNullModel(entity_t *currententity)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtxA );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 6 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -312,7 +347,7 @@ R_DrawNullModel(entity_t *currententity)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtxB );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 6 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -508,7 +543,7 @@ R_DrawParticles2(int num_particles, const particle_t particles[],
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glColorPointer( 4, GL_FLOAT, 0, clr );
 	glDrawArrays( GL_TRIANGLES, 0, num_particles*3 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
@@ -573,7 +608,7 @@ R_DrawParticles(void)
 		glVertexPointer( 3, GL_FLOAT, 0, vtx );
 		glColorPointer( 4, GL_FLOAT, 0, clr );
 		glDrawArrays( GL_POINTS, 0, r_newrefdef.num_particles );
-		Print_GL_Error(__func__);
+		glCheckError();
 
 		glDisableClientState( GL_VERTEX_ARRAY );
 		glDisableClientState( GL_COLOR_ARRAY );
@@ -629,7 +664,7 @@ R_PolyBlend(void)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
@@ -1866,7 +1901,7 @@ R_DrawBeam(entity_t *e)
 
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_STRIP, 0, NUM_BEAM_SEGS*4 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 

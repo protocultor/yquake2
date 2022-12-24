@@ -81,7 +81,7 @@ R_RenderDlight(dlight_t *light)
 	glVertexPointer( 3, GL_FLOAT, 0, vtx );
 	glColorPointer( 4, GL_FLOAT, 0, clr );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 18 );
-	Print_GL_Error(__func__);
+	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_COLOR_ARRAY );

@@ -303,7 +303,8 @@ void R_TextureAlphaMode(char *string);
 void R_TextureSolidMode(char *string);
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
-void Print_GL_Error(const char * function);
+void glCheckError_(const char * file, const char * function, int line);
+#define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)
 
 /* GL extension emulation functions */
 void R_DrawParticles2(int n,

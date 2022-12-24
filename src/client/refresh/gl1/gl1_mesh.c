@@ -260,7 +260,7 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 			glTexCoordPointer(2, GL_FLOAT, 0, tex);
 			glColorPointer(4, GL_FLOAT, 0, clr);
 			glDrawArrays(type, 0, total);
-			Print_GL_Error(__func__);
+			glCheckError();
 
 			glDisableClientState(GL_VERTEX_ARRAY);
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -369,7 +369,7 @@ R_DrawAliasShadow(entity_t *currententity, dmdl_t *paliashdr, int posenum)
 
 		glVertexPointer( 3, GL_FLOAT, 0, vtx );
 		glDrawArrays( type, 0, total );
-		Print_GL_Error(__func__);
+		glCheckError();
 
 		glDisableClientState( GL_VERTEX_ARRAY );
 	}
