@@ -81,12 +81,9 @@ typedef struct
 gltmode_t gl_alpha_modes[] = {
 	{"default", GL_RGBA},
 	{"GL_RGBA", GL_RGBA},
-	/*
-	{"GL_RGBA8", GL_RGBA8},
-	{"GL_RGB5_A1", GL_RGB5_A1},
-	{"GL_RGBA4", GL_RGBA4},
-	{"GL_RGBA2", GL_RGBA2},
-	*/
+	{"GL_RGBA8_OES", GL_RGBA8_OES},
+	{"GL_RGBA4_OES", GL_RGBA4_OES},
+	{"GL_RGB5_A1_OES", GL_RGB5_A1_OES},		// does this belong here ???
 };
 
 #define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
@@ -94,12 +91,10 @@ gltmode_t gl_alpha_modes[] = {
 gltmode_t gl_solid_modes[] = {
 	{"default", GL_RGB},
 	{"GL_RGB", GL_RGB},
-	/*
-	{"GL_RGB8", GL_RGB8},
-	{"GL_RGB5", GL_RGB5},
-	{"GL_RGB4", GL_RGB4},
-	{"GL_R3_G3_B2", GL_R3_G3_B2},
-	*/
+	{"GL_RGB8", GL_RGB8_OES},
+	{"GL_RGB565_OES", GL_RGB565_OES},
+	{"GL_RGB4", GL_RGBA4_OES},
+	{"GL_RGB5_A1_OES", GL_RGB5_A1_OES},
 };
 
 #define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
@@ -565,9 +560,10 @@ R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap)
 			break;
 		}
 	}
-    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
+	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
+	// R_Printf(PRINT_ALL, "comp = 0x%X\n", comp);
 	glTexImage2D(GL_TEXTURE_2D, 0, comp, width,
-			height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+			height, 0, comp, GL_UNSIGNED_BYTE,
 			data);
 	glCheckError();
 	// glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
@@ -677,7 +673,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
-						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+						scaled_height, 0, comp, GL_UNSIGNED_BYTE,
 						data);
 				glCheckError();
 			}
@@ -709,7 +705,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 	else
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
-				scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				scaled_height, 0, comp, GL_UNSIGNED_BYTE,
 				scaled);
 		glCheckError();
 	}
@@ -752,7 +748,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 			else
 			{
 				glTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
-						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
+						scaled_height, 0, comp, GL_UNSIGNED_BYTE, scaled);
 				glCheckError();
 			}
 		}

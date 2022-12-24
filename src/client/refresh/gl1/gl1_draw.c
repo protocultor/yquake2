@@ -440,8 +440,8 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 			}
 
 			glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
-								cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-								img);
+							cols, rows, 0, gl_tex_solid_format, GL_UNSIGNED_BYTE,
+							img);
 			glCheckError();
 
 			if(img != image32)
