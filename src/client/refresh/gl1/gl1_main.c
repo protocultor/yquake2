@@ -158,6 +158,7 @@ glCheckError_(const char * file, const char * function, int line)
 				break;
 			case GL_INVALID_VALUE:
 				msg = "GL_INVALID_VALUE";
+				break;
 			case GL_INVALID_OPERATION:
 				msg = "GL_INVALID_OPERATION";
 				break;
