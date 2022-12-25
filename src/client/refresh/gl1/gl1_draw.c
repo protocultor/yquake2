@@ -439,9 +439,12 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 				}
 			}
 
-			glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
-							cols, rows, 0, gl_tex_solid_format, GL_UNSIGNED_BYTE,
-							img);
+			// glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
+			//		cols, rows, 0, gl_tex_solid_format, GL_UNSIGNED_BYTE,
+			//		img);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+					cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+					img);
 			glCheckError();
 
 			if(img != image32)
@@ -475,7 +478,10 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 				}
 			}
 
-			glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
+			// glTexImage2D(GL_TEXTURE_2D, 0, gl_tex_solid_format,
+			//		256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+			//		image32);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 					256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 					image32);
 			glCheckError();

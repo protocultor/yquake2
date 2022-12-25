@@ -562,11 +562,14 @@ R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap)
 	}
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
 	// R_Printf(PRINT_ALL, "comp = 0x%X\n", comp);
-	glTexImage2D(GL_TEXTURE_2D, 0, comp, width,
-			height, 0, comp, GL_UNSIGNED_BYTE,
+	// glTexImage2D(GL_TEXTURE_2D, 0, comp, width,
+	//		height, 0, comp, GL_UNSIGNED_BYTE,
+	//		data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width,
+			height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 			data);
 	glCheckError();
-	// glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
+	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, false);
 	return samples == gl_alpha_format;
 }
 
@@ -672,8 +675,11 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 			}
 			else
 			{
-				glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
-						scaled_height, 0, comp, GL_UNSIGNED_BYTE,
+				// glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
+				//		scaled_height, 0, comp, GL_UNSIGNED_BYTE,
+				//		data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, scaled_width,
+						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 						data);
 				glCheckError();
 			}
@@ -704,8 +710,11 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 	}
 	else
 	{
-		glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
-				scaled_height, 0, comp, GL_UNSIGNED_BYTE,
+		// glTexImage2D(GL_TEXTURE_2D, 0, comp, scaled_width,
+		//		scaled_height, 0, comp, GL_UNSIGNED_BYTE,
+		//		scaled);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, scaled_width,
+				scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 				scaled);
 		glCheckError();
 	}
@@ -747,8 +756,10 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 			}
 			else
 			{
-				glTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
-						scaled_height, 0, comp, GL_UNSIGNED_BYTE, scaled);
+				// glTexImage2D(GL_TEXTURE_2D, miplevel, comp, scaled_width,
+				//		scaled_height, 0, comp, GL_UNSIGNED_BYTE, scaled);
+				glTexImage2D(GL_TEXTURE_2D, miplevel, GL_RGBA, scaled_width,
+						scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
 				glCheckError();
 			}
 		}
