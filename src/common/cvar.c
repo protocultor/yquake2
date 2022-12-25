@@ -80,8 +80,6 @@ replacement_t replacements[] = {
 	{"gl_stereo_anaglyph_colors", "gl1_stereo_anaglyph_colors"},
 	{"gl_stereo_convergence", "gl1_stereo_convergence"},
 	{"gl_swapinterval", "r_vsync"},
-	{"gl_texturealphamode", "gl1_texturealphamode"},
-	{"gl_texturesolidmode", "gl1_texturesolidmode"},
 	{"gl_ztrick", "gl1_ztrick"},
 	{"gl_msaa_samples", "r_msaa_samples"},
 	{"gl_nolerp_list", "r_nolerp_list"},

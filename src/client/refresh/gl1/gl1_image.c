@@ -74,33 +74,6 @@ glmode_t modes[] = {
 
 typedef struct
 {
-	char *name;
-	int mode;
-} gltmode_t;
-
-gltmode_t gl_alpha_modes[] = {
-	{"default", GL_RGBA},
-	{"GL_RGBA", GL_RGBA},
-	{"GL_RGBA8_OES", GL_RGBA8_OES},
-	{"GL_RGBA4_OES", GL_RGBA4_OES},
-	{"GL_RGB5_A1_OES", GL_RGB5_A1_OES},		// does this belong here ???
-};
-
-#define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
-
-gltmode_t gl_solid_modes[] = {
-	{"default", GL_RGB},
-	{"GL_RGB", GL_RGB},
-	{"GL_RGB8", GL_RGB8_OES},
-	{"GL_RGB565_OES", GL_RGB565_OES},
-	{"GL_RGB4", GL_RGBA4_OES},
-	{"GL_RGB5_A1_OES", GL_RGB5_A1_OES},
-};
-
-#define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
-
-typedef struct
-{
 	short x, y;
 } floodfill_t;
 
@@ -261,50 +234,6 @@ R_TextureMode(char *string)
 			}
 		}
 	}
-}
-
-void
-R_TextureAlphaMode(char *string)
-{
-	int i;
-
-	for (i = 0; i < NUM_GL_ALPHA_MODES; i++)
-	{
-		if (!Q_stricmp(gl_alpha_modes[i].name, string))
-		{
-			break;
-		}
-	}
-
-	if (i == NUM_GL_ALPHA_MODES)
-	{
-		R_Printf(PRINT_ALL, "bad alpha texture mode name\n");
-		return;
-	}
-
-	gl_tex_alpha_format = gl_alpha_modes[i].mode;
-}
-
-void
-R_TextureSolidMode(char *string)
-{
-	int i;
-
-	for (i = 0; i < NUM_GL_SOLID_MODES; i++)
-	{
-		if (!Q_stricmp(gl_solid_modes[i].name, string))
-		{
-			break;
-		}
-	}
-
-	if (i == NUM_GL_SOLID_MODES)
-	{
-		R_Printf(PRINT_ALL, "bad solid texture mode name\n");
-		return;
-	}
-
-	gl_tex_solid_format = gl_solid_modes[i].mode;
 }
 
 void
@@ -538,28 +467,13 @@ R_Upload32Native(unsigned *data, int width, int height, qboolean mipmap)
 {
 	// This is for GL 2.x so no palettes, no scaling, no messing around with the data here. :)
 	int samples;
-	int i, c;
-	byte *scan;
-	int comp;
 
-	c = width * height;
-	scan = ((byte *)data) + 3;
 	samples = gl_solid_format;
-	comp = gl_tex_solid_format;
 	upload_width = width;
 	upload_height = height;
 
 	R_LightScaleTexture(data, upload_width, upload_height, !mipmap);
 
-	for (i = 0; i < c; i++, scan += 4)
-	{
-		if (*scan != 255)
-		{
-			samples = gl_alpha_format;
-			comp = gl_tex_alpha_format;
-			break;
-		}
-	}
 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, mipmap);
 	// R_Printf(PRINT_ALL, "comp = 0x%X\n", comp);
 	// glTexImage2D(GL_TEXTURE_2D, 0, comp, width,
@@ -581,9 +495,6 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 	unsigned scaled[256 * 256];
 	unsigned char paletted_texture[256 * 256];
 	int scaled_width, scaled_height;
-	int i, c;
-	byte *scan;
-	int comp;
 
 	uploaded_paletted = false;
 
@@ -643,20 +554,7 @@ R_Upload32Soft(unsigned *data, int width, int height, qboolean mipmap)
 	}
 
 	/* scan the texture for any non-255 alpha */
-	c = width * height;
-	scan = ((byte *)data) + 3;
 	samples = gl_solid_format;
-	comp = gl_tex_solid_format;
-
-	for (i = 0; i < c; i++, scan += 4)
-	{
-		if (*scan != 255)
-		{
-			samples = gl_alpha_format;
-			comp = gl_tex_alpha_format;
-			break;
-		}
-	}
 
 	if ((scaled_width == width) && (scaled_height == height))
 	{

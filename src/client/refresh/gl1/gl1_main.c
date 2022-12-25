@@ -125,8 +125,6 @@ cvar_t *gl1_flashblend;
 cvar_t *gl1_saturatelighting;
 cvar_t *r_vsync;
 cvar_t *gl_texturemode;
-cvar_t *gl1_texturealphamode;
-cvar_t *gl1_texturesolidmode;
 cvar_t *gl_anisotropic;
 cvar_t *r_lockpvs;
 cvar_t *gl_msaa_samples;
@@ -257,7 +255,7 @@ R_DrawSpriteModel(entity_t *currententity, const model_t *currentmodel)
 		glDisable(GL_ALPHA_TEST);
 	}
 
-	GLfloat tex[] = {
+	GLbyte tex[] = {
 		0, 1,
 		0, 0,
 		1, 0,
@@ -280,7 +278,7 @@ R_DrawSpriteModel(entity_t *currententity, const model_t *currentmodel)
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
 	glVertexPointer( 3, GL_FLOAT, 0, point );
-	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
+	glTexCoordPointer( 2, GL_BYTE, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
 
@@ -654,7 +652,7 @@ R_PolyBlend(void)
 
 	glColor4f( v_blend[0], v_blend[1], v_blend[2], v_blend[3] );
 
-	GLfloat vtx[] = {
+	GLbyte vtx[] = {
 		10, 100, 100,
 		10, -100, 100,
 		10, -100, -100,
@@ -663,7 +661,7 @@ R_PolyBlend(void)
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 
-	glVertexPointer( 3, GL_FLOAT, 0, vtx );
+	glVertexPointer( 3, GL_BYTE, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
 
@@ -1301,8 +1299,6 @@ R_Register(void)
 	r_fixsurfsky = ri.Cvar_Get("r_fixsurfsky", "0", CVAR_ARCHIVE);
 
 	gl_texturemode = ri.Cvar_Get("gl_texturemode", "GL_LINEAR_MIPMAP_NEAREST", CVAR_ARCHIVE);
-	gl1_texturealphamode = ri.Cvar_Get("gl1_texturealphamode", "default", CVAR_ARCHIVE);
-	gl1_texturesolidmode = ri.Cvar_Get("gl1_texturesolidmode", "default", CVAR_ARCHIVE);
 	gl_anisotropic = ri.Cvar_Get("r_anisotropic", "0", CVAR_ARCHIVE);
 	r_lockpvs = ri.Cvar_Get("r_lockpvs", "0", 0);
 
@@ -1761,18 +1757,6 @@ RI_BeginFrame(float camera_separation)
 		r_lerp_list->modified = false;
 		r_2D_unfiltered->modified = false;
 		r_videos_unfiltered->modified = false;
-	}
-
-	if (gl1_texturealphamode->modified)
-	{
-		R_TextureAlphaMode(gl1_texturealphamode->string);
-		gl1_texturealphamode->modified = false;
-	}
-
-	if (gl1_texturesolidmode->modified)
-	{
-		R_TextureSolidMode(gl1_texturesolidmode->string);
-		gl1_texturesolidmode->modified = false;
 	}
 
 	if (r_vsync->modified)

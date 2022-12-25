@@ -80,7 +80,7 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 
 	R_Bind(draw_chars->texnum);
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 		x, y,
 		x + scaledSize, y,
 		x + scaledSize, y + scaledSize,
@@ -97,13 +97,13 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
 
-	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	glDisableClientState( GL_VERTEX_ARRAY );
 }
 
 image_t *
@@ -208,7 +208,7 @@ RDraw_PicScaled(int x, int y, char *pic, float factor)
 
 	R_Bind(gl->texnum);
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 		x, y,
 		x + gl->width * factor, y,
 		x + gl->width * factor, y + gl->height * factor,
@@ -225,7 +225,7 @@ RDraw_PicScaled(int x, int y, char *pic, float factor)
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
@@ -254,7 +254,7 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 
 	R_Bind(image->texnum);
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 		x, y,
 		x + w, y,
 		x + w, y + h,
@@ -271,7 +271,7 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
@@ -303,7 +303,7 @@ RDraw_Fill(int x, int y, int w, int h, int c)
 	glColor4f(color.v [ 0 ] / 255.0, color.v [ 1 ] / 255.0,
 			   color.v [ 2 ] / 255.0, 1);
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 		x, y,
 		x + w, y,
 		x + w, y + h,
@@ -312,7 +312,7 @@ RDraw_Fill(int x, int y, int w, int h, int c)
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
 
@@ -325,11 +325,11 @@ RDraw_Fill(int x, int y, int w, int h, int c)
 void
 RDraw_FadeScreen(void)
 {
-	glEnable(GL_BLEND);
 	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
 	glColor4f(0, 0, 0, 0.8);
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 		0, 0,
 		vid.width, 0,
 		vid.width, vid.height,
@@ -338,15 +338,15 @@ RDraw_FadeScreen(void)
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
 	glColor4f(1, 1, 1, 1);
-	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);
 }
 
 void
@@ -402,7 +402,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 		tex[7] = rows * hscale / 256 - 1.0 / 512.0;
 	}
 
-	GLfloat vtx[] = {
+	GLshort vtx[] = {
 			x, y,
 			x + w, y,
 			x + w, y + h,
@@ -527,7 +527,7 @@ RDraw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer( 2, GL_FLOAT, 0, vtx );
+	glVertexPointer( 2, GL_SHORT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
 	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
 	glCheckError();
