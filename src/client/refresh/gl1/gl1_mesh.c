@@ -26,6 +26,8 @@
 
 #include "header/local.h"
 
+#include "../gl3/header/DG_dynarr.h"
+
 #define NUMVERTEXNORMALS 162
 #define SHADEDOT_QUANT 16
 
@@ -45,17 +47,27 @@ float shadelight[3];
 float *shadedots = r_avertexnormal_dots[0];
 extern vec3_t lightspot;
 
+DA_TYPEDEF(gl3_alias_vtx_t, AliasVtxArray_t);
+DA_TYPEDEF(GLushort, UShortArray_t);
+// dynamic arrays to batch all the data of a model, so we can render a model in one draw call
+static AliasVtxArray_t vtxBuf = {0};
+static UShortArray_t idxBuf = {0};
+
+void
+R_ShutdownMeshes(void)
+{
+	da_free(vtxBuf);
+	da_free(idxBuf);
+}
+
 static void
-R_LerpVerts(entity_t *currententity, int nverts, dtrivertx_t *v, dtrivertx_t *ov,
+R_LerpVerts(qboolean powerUpEffect, int nverts, dtrivertx_t *v, dtrivertx_t *ov,
 		dtrivertx_t *verts, float *lerp, float move[3],
 		float frontv[3], float backv[3])
 {
 	int i;
 
-	if (currententity->flags &
-		(RF_SHELL_RED | RF_SHELL_GREEN |
-		 RF_SHELL_BLUE | RF_SHELL_DOUBLE |
-		 RF_SHELL_HALF_DAM))
+	if (powerUpEffect)
 	{
 		for (i = 0; i < nverts; i++, v++, ov++, lerp += 4)
 		{
@@ -100,6 +112,10 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 	int i;
 	int index_xyz;
 	float *lerp;
+	// draw without texture? used for quad damage effect etc, I think
+	qboolean colorOnly = 0 != (currententity->flags &
+			(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE |
+			 RF_SHELL_HALF_DAM));
 
 	frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames
 							  + currententity->frame * paliashdr->framesize);
@@ -152,131 +168,161 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 
 	lerp = s_lerped[0];
 
-	R_LerpVerts(currententity, paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
+	R_LerpVerts(colorOnly, paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
 
-#ifdef _MSC_VER // workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
-	int maxCount = 0;
-	const int* tmpOrder = order;
+	assert(sizeof(gl3_alias_vtx_t) == 9*sizeof(GLfloat));
+
+	// all the triangle fans and triangle strips of this model will be converted to
+	// just triangles: the vertices stay the same and are batched in vtxBuf,
+	// but idxBuf will contain indices to draw them all as GL_TRIANGLE
+	// this way there's only one draw call (and two glBufferData() calls)
+	// instead of (at least) dozens. *greatly* improves performance.
+
+	// so first clear out the data from last call to this function
+	// (the buffers are static global so we don't have malloc()/free() for each rendered model)
+	da_clear(vtxBuf);
+	da_clear(idxBuf);
+
 	while (1)
 	{
-		int c = *tmpOrder++;
-		if (!c)
-			break;
-		if ( c < 0 )
-			c = -c;
-		if ( c > maxCount )
-			maxCount = c;
+		GLushort nextVtxIdx = da_count(vtxBuf);
 
-		tmpOrder += 3 * c;
-	}
+		/* get the vertex count and primitive type */
+		count = *order++;
 
-	YQ2_VLA( GLfloat, vtx, 3 * maxCount );
-	YQ2_VLA( GLfloat, tex, 2 * maxCount );
-	YQ2_VLA( GLfloat, clr, 4 * maxCount );
-#endif
-
-		while (1)
+		if (!count)
 		{
-			/* get the vertex count and primitive type */
-			count = *order++;
-
-			if (!count)
-			{
-				break; /* done */
-			}
-
-			if (count < 0)
-			{
-				count = -count;
-
-                type = GL_TRIANGLE_FAN;
-			}
-			else
-			{
-                type = GL_TRIANGLE_STRIP;
-			}
-
-			total = count;
-
-#ifndef _MSC_VER // we have real VLAs, so it's safe to use one in this loop
-			YQ2_VLA(GLfloat, vtx, 3*total);
-			YQ2_VLA(GLfloat, tex, 2*total);
-			YQ2_VLA(GLfloat, clr, 4*total);
-#endif
-			unsigned int index_vtx = 0;
-			unsigned int index_tex = 0;
-			unsigned int index_clr = 0;
-
-			if (currententity->flags &
-				(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE))
-			{
-				do
-				{
-					index_xyz = order[2];
-					order += 3;
-
-					clr[index_clr++] = shadelight[0];
-					clr[index_clr++] = shadelight[1];
-					clr[index_clr++] = shadelight[2];
-					clr[index_clr++] = alpha;
-
-					vtx[index_vtx++] = s_lerped[index_xyz][0];
-					vtx[index_vtx++] = s_lerped[index_xyz][1];
-					vtx[index_vtx++] = s_lerped[index_xyz][2];
-				}
-				while (--count);
-			}
-			else
-			{
-				do
-				{
-					/* texture coordinates come from the draw list */
-					tex[index_tex++] = ((float *) order)[0];
-					tex[index_tex++] = ((float *) order)[1];
-
-					index_xyz = order[2];
-					order += 3;
-
-					/* normals and vertexes come from the frame list */
-					l = shadedots[verts[index_xyz].lightnormalindex];
-
-					clr[index_clr++] = l * shadelight[0];
-					clr[index_clr++] = l * shadelight[1];
-					clr[index_clr++] = l * shadelight[2];
-					clr[index_clr++] = alpha;
-
-					vtx[index_vtx++] = s_lerped[index_xyz][0];
-					vtx[index_vtx++] = s_lerped[index_xyz][1];
-					vtx[index_vtx++] = s_lerped[index_xyz][2];
-				}
-				while (--count);
-			}
-
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glEnableClientState(GL_COLOR_ARRAY);
-
-			glVertexPointer(3, GL_FLOAT, 0, vtx);
-			glTexCoordPointer(2, GL_FLOAT, 0, tex);
-			glColorPointer(4, GL_FLOAT, 0, clr);
-			glDrawArrays(type, 0, total);
-			glCheckError();
-
-			glDisableClientState(GL_VERTEX_ARRAY);
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_COLOR_ARRAY);
+			break; /* done */
 		}
 
-		YQ2_VLAFREE( vtx );
-		YQ2_VLAFREE( tex );
-		YQ2_VLAFREE( clr )
+		if (count < 0)
+		{
+			count = -count;
 
+			type = GL_TRIANGLE_FAN;
+		}
+		else
+		{
+			type = GL_TRIANGLE_STRIP;
+		}
+
+		gl3_alias_vtx_t* buf = da_addn_uninit(vtxBuf, count);
+
+		if (colorOnly)
+		{
+			int i;
+			for(i=0; i<count; ++i)
+			{
+				int j=0;
+				gl3_alias_vtx_t* cur = &buf[i];
+				index_xyz = order[2];
+				order += 3;
+
+				for(j=0; j<3; ++j)
+				{
+					cur->pos[j] = s_lerped[index_xyz][j];
+					cur->color[j] = shadelight[j];
+				}
+				cur->color[3] = alpha;
+			}
+		}
+		else
+		{
+			int i;
+			for(i=0; i<count; ++i)
+			{
+				int j=0;
+				gl3_alias_vtx_t* cur = &buf[i];
+				/* texture coordinates come from the draw list */
+				cur->texCoord[0] = ((float *) order)[0];
+				cur->texCoord[1] = ((float *) order)[1];
+
+				index_xyz = order[2];
+
+				order += 3;
+
+				/* normals and vertexes come from the frame list */
+				// shadedots is set above according to rotation (around Z axis I think)
+				// to one of 16 (SHADEDOT_QUANT) presets in r_avertexnormal_dots
+				l = shadedots[verts[index_xyz].lightnormalindex];
+
+				for(j=0; j<3; ++j)
+				{
+					cur->pos[j] = s_lerped[index_xyz][j];
+					cur->color[j] = l * shadelight[j];
+				}
+				cur->color[3] = alpha;
+			}
+		}
+
+		// translate triangle fan/strip to just triangle indices
+		if(type == GL_TRIANGLE_FAN)
+		{
+			GLushort i;
+			for(i=1; i < count-1; ++i)
+			{
+				GLushort* add = da_addn_uninit(idxBuf, 3);
+
+				add[0] = nextVtxIdx;
+				add[1] = nextVtxIdx+i;
+				add[2] = nextVtxIdx+i+1;
+			}
+		}
+		else // triangle strip
+		{
+			GLushort i;
+			for(i=1; i < count-2; i+=2)
+			{
+				// add two triangles at once, because the vertex order is different
+				// for odd vs even triangles
+				GLushort* add = da_addn_uninit(idxBuf, 6);
+
+				add[0] = nextVtxIdx + i-1;
+				add[1] = nextVtxIdx + i;
+				add[2] = nextVtxIdx + i+1;
+
+				add[3] = nextVtxIdx + i;
+				add[4] = nextVtxIdx + i+2;
+				add[5] = nextVtxIdx + i+1;
+			}
+			// add remaining triangle, if any
+			if(i < count-1)
+			{
+				GLushort* add = da_addn_uninit(idxBuf, 3);
+
+				add[0] = nextVtxIdx + i-1;
+				add[1] = nextVtxIdx + i;
+				add[2] = nextVtxIdx + i+1;
+			}
+		}
+	}
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	R_SurfInit();
+
+	GL3_BindVBO(gl_state.vboAlias);
+	glBufferData(GL_ARRAY_BUFFER, da_count(vtxBuf)*sizeof(gl3_alias_vtx_t), vtxBuf.p, GL_DYNAMIC_DRAW);
+	GL3_BindEBO(gl_state.eboAlias);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, da_count(idxBuf)*sizeof(GLushort), idxBuf.p, GL_DYNAMIC_DRAW);
+	glDrawElements(GL_TRIANGLES, da_count(idxBuf), GL_UNSIGNED_SHORT, NULL);
+
+	R_SurfShutdown();
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+/*
 	if (currententity->flags &
 		(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE |
 		 RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
 	{
 		glEnable(GL_TEXTURE_2D);
 	}
+*/
 }
 
 static void

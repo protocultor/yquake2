@@ -26,6 +26,9 @@
 
 #include "header/local.h"
 
+#define DG_DYNARR_IMPLEMENTATION
+#include "../gl3/header/DG_dynarr.h"
+
 #define NUM_BEAM_SEGS 6
 
 viddef_t vid;
@@ -1599,6 +1602,7 @@ RI_Init(void)
 	Mod_Init();
 	R_InitParticleTexture();
 	Draw_InitLocal();
+	// R_SurfInit();
 
 	return true;
 }
@@ -1613,7 +1617,9 @@ RI_Shutdown(void)
 
 	Mod_FreeAll();
 
+	R_ShutdownMeshes();
 	R_ShutdownImages();
+	// R_SurfShutdown();
 
 	/* shutdown OS specific OpenGL stuff like contexts, etc.  */
 	RI_ShutdownContext();

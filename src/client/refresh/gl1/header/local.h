@@ -301,6 +301,10 @@ void R_TextureAlphaMode(char *string);
 void R_TextureSolidMode(char *string);
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
+extern void R_ShutdownMeshes(void);
+extern void R_SurfInit(void);
+extern void R_SurfShutdown(void);
+
 // void glCheckError_(const char * file, const char * function, int line);
 // define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)
 #define glCheckError();
@@ -355,6 +359,9 @@ typedef struct
 	enum stereo_modes stereo_mode;
 
 	qboolean stencil;
+
+	GLuint currentVBO, currentEBO;
+	GLuint vboAlias, eboAlias; // for models, using 9 floats as (x,y,z, s,t, r,g,b,a)
 } glstate_t;
 
 typedef struct
@@ -373,6 +380,26 @@ typedef struct
 
 extern glconfig_t gl_config;
 extern glstate_t gl_state;
+
+static inline void
+GL3_BindVBO(GLuint vbo)
+{
+	if(vbo != gl_state.currentVBO)
+	{
+		gl_state.currentVBO = vbo;
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	}
+}
+
+static inline void
+GL3_BindEBO(GLuint ebo)
+{
+	if(ebo != gl_state.currentEBO)
+	{
+		gl_state.currentEBO = ebo;
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	}
+}
 
 /*
  * Updates the gamma ramp.

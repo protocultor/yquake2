@@ -25,6 +25,7 @@
  */
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "header/local.h"
 
@@ -41,6 +42,35 @@ qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 
 void R_SetCacheState(msurface_t *surf);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
+
+void R_SurfInit(void)
+{
+	static const int pos_ptr = offsetof(gl3_alias_vtx_t, pos);
+	static const int tex_ptr = offsetof(gl3_alias_vtx_t, texCoord);
+	static const int color_ptr = offsetof(gl3_alias_vtx_t, color);
+	static const int stride = sizeof(gl3_alias_vtx_t);
+
+	// init VBO for model vertexdata: 9 floats
+	// (X,Y,Z), (S,T), (R,G,B,A)
+
+	glGenBuffers(1, &gl_state.vboAlias);
+	glBindBuffer(GL_ARRAY_BUFFER, gl_state.vboAlias);
+
+	glVertexPointer(3, GL_FLOAT, stride, (GLvoid *)(NULL + pos_ptr));
+	glTexCoordPointer(2, GL_FLOAT, stride, (GLvoid *)(NULL + tex_ptr));
+	glColorPointer(4, GL_FLOAT, stride, (GLvoid *)(NULL + color_ptr));
+
+	glGenBuffers(1, &gl_state.eboAlias);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_state.eboAlias);
+}
+
+void R_SurfShutdown(void)
+{
+	glDeleteBuffers(1, &gl_state.eboAlias);
+	gl_state.eboAlias = 0;
+	glDeleteBuffers(1, &gl_state.vboAlias);
+	gl_state.vboAlias = 0;
+}
 
 /*
  * Returns the proper texture for a given time and base texture

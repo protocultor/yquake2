@@ -38,6 +38,13 @@
 #define SURF_UNDERWATER 0x80
 #define VERTEXSIZE 7
 
+// used for vertex array elements when drawing models
+typedef struct gl3_alias_vtx_s {
+	GLfloat pos[3];
+	GLfloat texCoord[2];
+	GLfloat color[4];
+} gl3_alias_vtx_t;
+
 /* in memory representation */
 typedef struct
 {
