@@ -24,6 +24,8 @@
  * =======================================================================
  */
 
+#include "../../gl3/header/DG_dynarr.h"
+
 #ifndef REF_MODEL_H
 #define REF_MODEL_H
 
@@ -44,6 +46,15 @@ typedef struct gl3_alias_vtx_s {
 	GLfloat texCoord[2];
 	GLfloat color[4];
 } gl3_alias_vtx_t;
+
+typedef struct gl3_alias_vtx_nc_s {
+	GLfloat pos[3];
+	GLfloat texCoord[2];
+} gl3_alias_vtx_nc_t;
+
+DA_TYPEDEF(gl3_alias_vtx_t, AliasVtxArray_t);
+DA_TYPEDEF(gl3_alias_vtx_nc_t, AliasVtxArray_NC_t);
+DA_TYPEDEF(GLushort, UShortArray_t);
 
 /* in memory representation */
 typedef struct

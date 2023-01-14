@@ -26,7 +26,7 @@
 
 #include "header/local.h"
 
-#include "../gl3/header/DG_dynarr.h"
+// #include "../gl3/header/DG_dynarr.h"
 
 #define NUMVERTEXNORMALS 162
 #define SHADEDOT_QUANT 16
@@ -47,8 +47,8 @@ float shadelight[3];
 float *shadedots = r_avertexnormal_dots[0];
 extern vec3_t lightspot;
 
-DA_TYPEDEF(gl3_alias_vtx_t, AliasVtxArray_t);
-DA_TYPEDEF(GLushort, UShortArray_t);
+// DA_TYPEDEF(gl3_alias_vtx_t, AliasVtxArray_t);
+// DA_TYPEDEF(GLushort, UShortArray_t);
 // dynamic arrays to batch all the data of a model, so we can render a model in one draw call
 static AliasVtxArray_t vtxBuf = {0};
 static UShortArray_t idxBuf = {0};

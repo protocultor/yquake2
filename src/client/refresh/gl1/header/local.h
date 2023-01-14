@@ -304,6 +304,7 @@ int Scrap_AllocBlock(int w, int h, int *x, int *y);
 extern void R_ShutdownMeshes(void);
 extern void R_SurfInit(void);
 extern void R_SurfShutdown(void);
+extern void R_ShutdownWarps(void);
 
 // void glCheckError_(const char * file, const char * function, int line);
 // define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)

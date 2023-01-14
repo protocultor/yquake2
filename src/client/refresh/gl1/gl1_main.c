@@ -1619,6 +1619,7 @@ RI_Shutdown(void)
 
 	R_ShutdownMeshes();
 	R_ShutdownImages();
+	R_ShutdownWarps();
 	// R_SurfShutdown();
 
 	/* shutdown OS specific OpenGL stuff like contexts, etc.  */

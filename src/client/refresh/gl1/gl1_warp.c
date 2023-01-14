@@ -24,6 +24,7 @@
  * =======================================================================
  */
 
+#include <stddef.h>
 #include "header/local.h"
 
 #define TURBSCALE (256.0 / (2 * M_PI))
@@ -42,6 +43,12 @@ GLfloat vtx_sky[12];
 GLfloat tex_sky[8];
 unsigned int index_vtx = 0;
 unsigned int index_tex = 0;
+
+static qboolean printing_shit = false;
+
+// dynamic arrays to batch all the data of a model, so we can render a model in one draw call
+static AliasVtxArray_NC_t vtxBuf = {0};
+static UShortArray_t idxBuf = {0};
 
 /* 3dstudio environment map names */
 char *suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
@@ -84,6 +91,33 @@ int vec_to_st[6][3] = {
 
 float skymins[2][6], skymaxs[2][6];
 float sky_min, sky_max;
+
+void
+R_ShutdownWarps(void)
+{
+	da_free(vtxBuf);
+	da_free(idxBuf);
+}
+
+void
+R_WarpInit(void)
+{
+	static const int pos_ptr = offsetof(gl3_alias_vtx_nc_t, pos);
+	static const int tex_ptr = offsetof(gl3_alias_vtx_nc_t, texCoord);
+	static const int stride = sizeof(gl3_alias_vtx_nc_t);
+
+	// init VBO for model vertexdata: 9 floats
+	// (X,Y,Z), (S,T), (R,G,B,A)
+
+	glGenBuffers(1, &gl_state.vboAlias);
+	glBindBuffer(GL_ARRAY_BUFFER, gl_state.vboAlias);
+
+	glVertexPointer(3, GL_FLOAT, stride, (GLvoid *)(NULL + pos_ptr));
+	glTexCoordPointer(2, GL_FLOAT, stride, (GLvoid *)(NULL + tex_ptr));
+
+	glGenBuffers(1, &gl_state.eboAlias);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_state.eboAlias);
+}
 
 void
 R_BoundPoly(int numverts, float *verts, vec3_t mins, vec3_t maxs)
@@ -297,6 +331,90 @@ R_EmitWaterPolys(msurface_t *fa)
 		scroll = 0;
 	}
 
+#if 1
+
+	assert(sizeof(gl3_alias_vtx_nc_t) == 5*sizeof(GLfloat));
+
+	// all the triangle fans and triangle strips of this model will be converted to
+	// just triangles: the vertices stay the same and are batched in vtxBuf,
+	// but idxBuf will contain indices to draw them all as GL_TRIANGLE
+	// this way there's only one draw call (and two glBufferData() calls)
+	// instead of (at least) dozens. *greatly* improves performance.
+
+	// so first clear out the data from last call to this function
+	// (the buffers are static global so we don't have malloc()/free() for each rendered model)
+	da_clear(vtxBuf);
+	da_clear(idxBuf);
+
+	for (bp = fa->polys; bp; bp = bp->next)
+	{
+		GLushort nextVtxIdx = da_count(vtxBuf);
+
+		p = bp;
+
+		gl3_alias_vtx_nc_t* buf = da_addn_uninit(vtxBuf, p->numverts);
+
+		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
+		{
+			gl3_alias_vtx_nc_t* cur = &buf[i];
+			os = v [ 3 ];
+			ot = v [ 4 ];
+
+			s = os + r_turbsin [ (int) ( ( ot * 0.125 + r_newrefdef.time ) * TURBSCALE ) & 255 ];
+			s += scroll;
+			cur->texCoord[0] = s * ( 1.0 / 64 );
+
+			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
+			cur->texCoord[1] = t * ( 1.0 / 64 );
+
+			for(unsigned short j=0; j<3; ++j)
+			{
+				cur->pos[j] = v[j];
+			}
+		}
+
+		// indices
+		for(GLushort i=1; i < p->numverts - 1; ++i)
+		{
+			GLushort* add = da_addn_uninit(idxBuf, 3);
+
+			add[0] = nextVtxIdx;
+			add[1] = nextVtxIdx+i;
+			add[2] = nextVtxIdx+i+1;
+		}
+
+	}
+
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+	R_WarpInit();
+	GL3_BindVBO(gl_state.vboAlias);
+	glBufferData(GL_ARRAY_BUFFER, da_count(vtxBuf)*sizeof(gl3_alias_vtx_nc_t), vtxBuf.p, GL_STATIC_DRAW);
+	GL3_BindEBO(gl_state.eboAlias);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, da_count(idxBuf)*sizeof(GLushort), idxBuf.p, GL_STATIC_DRAW);
+	glDrawElements(GL_TRIANGLES, da_count(idxBuf), GL_UNSIGNED_SHORT, NULL);
+	glCheckError();
+	R_SurfShutdown();
+
+	glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+/*
+	if (printing_shit)
+	{
+		for (i = 0; i < da_count(vtxBuf); i++)
+		{
+			gl3_alias_vtx_nc_t cur = da_get(vtxBuf, i);
+			R_Printf(PRINT_ALL, "v = %.2f %.2f %.2f\n", cur.pos[0],
+				cur.pos[1], cur.pos[2]);
+		}
+		R_Printf(PRINT_ALL, "p->numverts = %ld\n", da_count(idxBuf));
+	}
+*/
+
+#else
+
 	// workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
 #ifdef _MSC_VER
 	int maxNumVerts = 0;
@@ -342,9 +460,25 @@ R_EmitWaterPolys(msurface_t *fa)
 
         glDisableClientState( GL_VERTEX_ARRAY );
         glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+		/*
+		if (printing_shit)
+		{
+			for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
+			{
+				R_Printf(PRINT_ALL, "v = %.2f %.2f %.2f\n", v[0], v[1], v[2]);
+			}
+			R_Printf(PRINT_ALL, "p->numverts = %d\n", p->numverts);
+		}
+		*/
 	}
 
 	YQ2_VLAFREE( tex );
+
+#endif
+	// if (printing_shit)
+	//	printing_shit = false;
+
 }
 
 void
