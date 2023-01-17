@@ -24,6 +24,7 @@
  * =======================================================================
  */
 
+#include <stddef.h>
 #include "header/local.h"
 
 #define DG_DYNARR_IMPLEMENTATION
@@ -140,6 +141,9 @@ cvar_t *gl1_stereo_separation;
 cvar_t *gl1_stereo_anaglyph_colors;
 cvar_t *gl1_stereo_convergence;
 
+// dynamic arrays to batch all the data of a model, so we can render a model in one draw call
+static AliasVtxArray_NC_t vtxBuf = {0};
+static UShortArray_t idxBuf = {0};
 
 refimport_t ri;
 
@@ -1810,6 +1814,113 @@ RI_SetPalette(const unsigned char *palette)
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(1, 0, 0.5, 0.5);
 }
+
+
+void
+R_PointerInit(void)
+{
+	static const int pos_ptr = offsetof(gl3_alias_vtx_nc_t, pos);
+	static const int tex_ptr = offsetof(gl3_alias_vtx_nc_t, texCoord);
+	static const int stride = sizeof(gl3_alias_vtx_nc_t);
+
+	// init VBO for model vertexdata: 9 floats
+	// (X,Y,Z), (S,T), (R,G,B,A)
+
+	glGenBuffers(1, &gl_state.vboAlias);
+	glBindBuffer(GL_ARRAY_BUFFER, gl_state.vboAlias);
+
+	glVertexPointer(3, GL_FLOAT, stride, (GLvoid *)(NULL + pos_ptr));
+	glTexCoordPointer(2, GL_FLOAT, stride, (GLvoid *)(NULL + tex_ptr));
+
+	glGenBuffers(1, &gl_state.eboAlias);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gl_state.eboAlias);
+}
+
+// assumes gl3state.v[ab]o3D are bound
+// buffers and draws gl3_3D_vtx_t vertices
+// drawMode is something like GL_TRIANGLE_STRIP or GL_TRIANGLE_FAN or whatever
+void
+GL1_BufferAndDraw3D(msurface_t *fa, GLenum drawMode)
+{
+	glpoly_t *p, *bp;
+	float *v;
+	int i;
+
+	// all the triangle fans and triangle strips of this model will be converted to
+	// just triangles: the vertices stay the same and are batched in vtxBuf,
+	// but idxBuf will contain indices to draw them all as GL_TRIANGLE
+	// this way there's only one draw call (and two glBufferData() calls)
+	// instead of (at least) dozens. *greatly* improves performance.
+
+	// so first clear out the data from last call to this function
+	// (the buffers are static global so we don't have malloc()/free() for each rendered model)
+	da_clear(vtxBuf);
+	da_clear(idxBuf);
+
+	// First, let's do something extremely dumb: convert array to struct
+
+	for (bp = fa->polys; bp; bp = bp->next)
+	{
+		// GLushort nextVtxIdx = da_count(vtxBuf);
+
+		p = bp;
+
+		if (!p || !p->numverts)
+		{
+			continue;
+		}
+
+		gl3_alias_vtx_nc_t* buf = da_addn_uninit(vtxBuf, p->numverts);
+
+		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
+		{
+			gl3_alias_vtx_nc_t* cur = &buf[i];
+			cur->texCoord[0] = v [ 3 ];
+			cur->texCoord[1] = v [ 4 ];
+
+			for(unsigned short j=0; j<3; ++j)
+			{
+				cur->pos[j] = v[j];
+			}
+		}
+
+		// indices - do we need them?
+		/*
+		for(GLushort i=1; i < p->numverts - 1; ++i)
+		{
+			GLushort* add = da_addn_uninit(idxBuf, 3);
+
+			add[0] = nextVtxIdx;
+			add[1] = nextVtxIdx+i;
+			add[2] = nextVtxIdx+i+1;
+		}
+		*/
+
+	}
+
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+	R_PointerInit();
+	GL3_BindVBO(gl_state.vboAlias);
+	glBufferData(GL_ARRAY_BUFFER, da_count(vtxBuf)*sizeof(gl3_alias_vtx_nc_t), vtxBuf.p, GL_STATIC_DRAW);
+	// GL3_BindEBO(gl_state.eboAlias);
+	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, da_count(idxBuf)*sizeof(GLushort), idxBuf.p, GL_STATIC_DRAW);
+	// glDrawElements(GL_TRIANGLES, da_count(idxBuf), GL_UNSIGNED_SHORT, NULL);
+	glDrawArrays( drawMode, 0, da_count(vtxBuf) );
+	glCheckError();
+	R_SurfShutdown();
+
+	glDisableClientState( GL_VERTEX_ARRAY );
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+
+	/*
+	glBufferData( GL_ARRAY_BUFFER, sizeof(gl3_3D_vtx_t)*numVerts, verts, GL_STREAM_DRAW );
+	glDrawArrays( drawMode, 0, numVerts );
+	*/
+
+}
+
 
 /* R_DrawBeam */
 void

@@ -363,6 +363,7 @@ typedef struct
 
 	GLuint currentVBO, currentEBO;
 	GLuint vboAlias, eboAlias; // for models, using 9 floats as (x,y,z, s,t, r,g,b,a)
+	GLuint vbo3D; // for brushes etc, using 10 floats and one uint as vertex input (x,y,z, s,t, lms,lmt, normX,normY,normZ ; lightFlags)
 } glstate_t;
 
 typedef struct
@@ -401,6 +402,8 @@ GL3_BindEBO(GLuint ebo)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	}
 }
+
+extern void GL1_BufferAndDraw3D(msurface_t *fa, GLenum drawMode);
 
 /*
  * Updates the gamma ramp.

@@ -97,8 +97,12 @@ R_TextureAnimation(entity_t *currententity, mtexinfo_t *tex)
 }
 
 static void
-R_DrawGLPoly(glpoly_t *p)
+R_DrawGLPoly(msurface_t *fa)
 {
+	GL3_BindVBO(gl_state.vbo3D);
+	GL1_BufferAndDraw3D(fa, GL_TRIANGLE_FAN);
+
+	/*
 	float *v;
 
 	v = p->verts[0];
@@ -113,6 +117,7 @@ R_DrawGLPoly(glpoly_t *p)
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	*/
 }
 
 static void
@@ -531,7 +536,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 	}
 	else
 	{
-		R_DrawGLPoly(fa->polys);
+		R_DrawGLPoly(fa);
 	}
 
 	/* check for lightmap modification */
@@ -647,7 +652,7 @@ R_DrawAlphaSurfaces(void)
 		}
 		else
 		{
-			R_DrawGLPoly(s->polys);
+			R_DrawGLPoly(s);
 		}
 	}
 
