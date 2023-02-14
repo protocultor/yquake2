@@ -22,7 +22,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "Build & copy game",
+            "preLaunchTask": "Build n copy game",
             "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
