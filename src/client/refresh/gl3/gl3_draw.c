@@ -48,17 +48,22 @@ GL3_Draw_InitLocal(void)
 	// glBindVertexArray(vao2D);
 
 	glGenBuffers(1, &vbo2D);
+	glCheckError();
 	GL3_BindVBO(vbo2D);
+	glCheckError();
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 
 	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
 	// Note: the glVertexAttribPointer() configuration is stored in the VAO, not the shader or sth
 	//       (that's why I use one VAO per 2D shader)
 	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
+	glCheckError();
 
 	glEnableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
 	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 2*sizeof(float));
+	glCheckError();
 
 	// set up attribute layout for 2D flat color rendering
 
@@ -66,19 +71,24 @@ GL3_Draw_InitLocal(void)
 	// glBindVertexArray(vao2Dcolor);
 
 	GL3_BindVBO(vbo2D); // yes, both VAOs share the same VBO
+	glCheckError();
 
 	GL3_UseProgram(gl3state.si2Dcolor.shaderProgram);
+	glCheckError();
 
 	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
 	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), 0);
+	glCheckError();
 
 	GL3_BindVAO(0);
+	glCheckError();
 }
 
 void
 GL3_Draw_ShutdownLocal(void)
 {
 	glDeleteBuffers(1, &vbo2D);
+	glCheckError();
 	vbo2D = 0;
 	// glDeleteVertexArrays(1, &vao2D);
 	vao2D = 0;
@@ -110,13 +120,17 @@ drawTexturedRectangle(float x, float y, float w, float h,
 	};
 
 	GL3_BindVAO(vao2D);
+	glCheckError();
 
 	// Note: while vao2D "remembers" its vbo for drawing, binding the vao does *not*
 	//       implicitly bind the vbo, so I need to explicitly bind it before glBufferData()
 	GL3_BindVBO(vbo2D);
+	glCheckError();
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
+	glCheckError();
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glCheckError();
 
 	//glMultiDrawArrays(mode, first, count, drawcount) ??
 }
@@ -155,7 +169,9 @@ GL3_Draw_CharScaled(int x, int y, int num, float scale)
 	// TODO: batchen?
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 	GL3_Bind(draw_chars->texnum);
+	glCheckError();
 	drawTexturedRectangle(x, y, scaledSize, scaledSize, fcol, frow, fcol+size, frow+size);
 }
 
@@ -207,7 +223,9 @@ GL3_Draw_StretchPic(int x, int y, int w, int h, char *pic)
 	}
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 	GL3_Bind(gl->texnum);
+	glCheckError();
 
 	drawTexturedRectangle(x, y, w, h, gl->sl, gl->tl, gl->sh, gl->th);
 }
@@ -223,7 +241,9 @@ GL3_Draw_PicScaled(int x, int y, char *pic, float factor)
 	}
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 	GL3_Bind(gl->texnum);
+	glCheckError();
 
 	drawTexturedRectangle(x, y, gl->width*factor, gl->height*factor, gl->sl, gl->tl, gl->sh, gl->th);
 }
@@ -244,7 +264,9 @@ GL3_Draw_TileClear(int x, int y, int w, int h, char *pic)
 	}
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 	GL3_Bind(image->texnum);
+	glCheckError();
 
 	drawTexturedRectangle(x, y, w, h, x/64.0f, y/64.0f, (x+w)/64.0f, (y+h)/64.0f);
 }
@@ -256,7 +278,9 @@ GL3_DrawFrameBufferObject(int x, int y, int w, int h, GLuint fboTexture, const f
 	gl3ShaderInfo_t* shader = underwater ? &gl3state.si2DpostProcessWater
 	                                     : &gl3state.si2DpostProcess;
 	GL3_UseProgram(shader->shaderProgram);
+	glCheckError();
 	GL3_Bind(fboTexture);
+	glCheckError();
 
 	if(underwater && shader->uniLmScalesOrTime != -1)
 	{
@@ -305,14 +329,20 @@ GL3_Draw_Fill(int x, int y, int w, int h, int c)
 	gl3state.uniCommonData.color.A = 1.0f;
 
 	GL3_UpdateUBOCommon();
+	glCheckError();
 
 	GL3_UseProgram(gl3state.si2Dcolor.shaderProgram);
+	glCheckError();
 	GL3_BindVAO(vao2Dcolor);
+	glCheckError();
 
 	GL3_BindVBO(vbo2D);
+	glCheckError();
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
+	glCheckError();
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glCheckError();
 }
 
 // in GL1 this is called R_Flash() (which just calls R_PolyBlend())
@@ -336,17 +366,24 @@ GL3_Draw_Flash(const float color[4], float x, float y, float w, float h)
 	for(i=0; i<4; ++i)  gl3state.uniCommonData.color.Elements[i] = color[i];
 
 	GL3_UpdateUBOCommon();
+	glCheckError();
 
 	GL3_UseProgram(gl3state.si2Dcolor.shaderProgram);
+	glCheckError();
 
 	GL3_BindVAO(vao2Dcolor);
+	glCheckError();
 
 	GL3_BindVBO(vbo2D);
+	glCheckError();
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
+	glCheckError();
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glCheckError();
 
 	glDisable(GL_BLEND);
+	glCheckError();
 }
 
 void
@@ -385,14 +422,18 @@ GL3_Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	}
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
 
 	GLuint glTex;
 	glGenTextures(1, &glTex);
+	glCheckError();
 	GL3_SelectTMU(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glTex);
+	glCheckError();
 
 	glTexImage2D(GL_TEXTURE_2D, 0, gl3_tex_solid_format,
 	             cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
+	glCheckError();
 
 	if(img != image32)
 	{
@@ -408,6 +449,7 @@ GL3_Draw_StretchRaw(int x, int y, int w, int h, int cols, int rows, byte *data)
 	drawTexturedRectangle(x, y, w, h, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	glDeleteTextures(1, &glTex);
+	glCheckError();
 
 	GL3_Bind(0);
 }

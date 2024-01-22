@@ -503,6 +503,11 @@ extern void GL3_UpdateUBO2D(void);
 extern void GL3_UpdateUBO3D(void);
 extern void GL3_UpdateUBOLights(void);
 
+#ifdef DEBUG
+extern void glCheckError_(const char * file, const char * function, int line);
+#define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)
+#endif
+
 // ############ Cvars ###########
 
 extern cvar_t *gl_msaa_samples;

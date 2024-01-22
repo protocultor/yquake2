@@ -470,6 +470,10 @@ GL3_Init(void)
 	R_Printf(PRINT_ALL, "Refresh: " REF_VERSION "\n");
 	R_Printf(PRINT_ALL, "Client: " YQ2VERSION "\n\n");
 
+#ifdef DEBUG
+	R_Printf(PRINT_ALL, "GL3_Init() - DEBUG mode enabled\n");
+#endif
+
 	if(sizeof(float) != sizeof(GLfloat))
 	{
 		// if this ever happens, things would explode because we feed vertex arrays and UBO data
@@ -623,6 +627,7 @@ GL3_Init(void)
 	GL3_SurfInit();
 
 	glGenFramebuffers(1, &gl3state.ppFBO);
+	glCheckError();
 	// the rest for the FBO is done dynamically in GL3_RenderView() so it can
 	// take the viewsize into account (enforce that by setting invalid size)
 	gl3state.ppFBtexWidth = gl3state.ppFBtexHeight = -1;
@@ -2068,3 +2073,31 @@ Com_Printf(char *msg, ...)
 	ri.Com_VPrintf(PRINT_ALL, msg, argptr);
 	va_end(argptr);
 }
+
+#ifdef DEBUG
+void
+glCheckError_(const char *file, const char *function, int line)
+{
+	GLenum errorCode;
+	const char * msg;
+
+#define MY_ERROR_CASE(X) case X : msg = #X; break;
+
+	while ((errorCode = glGetError()) != GL_NO_ERROR)
+	{
+		switch(errorCode)
+		{
+			MY_ERROR_CASE(GL_INVALID_ENUM);
+			MY_ERROR_CASE(GL_INVALID_VALUE);
+			MY_ERROR_CASE(GL_INVALID_OPERATION);
+			MY_ERROR_CASE(GL_INVALID_FRAMEBUFFER_OPERATION);
+			MY_ERROR_CASE(GL_OUT_OF_MEMORY);
+			default: msg = "UNKNOWN";
+		}
+		R_Printf(PRINT_ALL, "glError: %s in %s (%s, %d)\n", msg, function, file, line );
+	}
+
+#undef MY_ERROR_CASE
+
+}
+#endif

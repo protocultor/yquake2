@@ -866,10 +866,12 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	shaderInfo->uniVblend = -1;
 
 	shaders2D[0] = CompileShader(GL_VERTEX_SHADER, vertSrc, NULL);
+	glCheckError();
 	R_Printf(PRINT_ALL, "shaders2D[0] = %d\n", shaders2D[0]);
 	if(shaders2D[0] == 0)  return false;
 
 	shaders2D[1] = CompileShader(GL_FRAGMENT_SHADER, fragSrc, NULL);
+	glCheckError();
 	R_Printf(PRINT_ALL, "shaders2D[1] = %d\n", shaders2D[1]);
 	if(shaders2D[1] == 0)
 	{
@@ -878,10 +880,13 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	}
 
 	prog = CreateShaderProgram(2, shaders2D);
+	glCheckError();
 
 	// I think the shaders aren't needed anymore once they're linked into the program
 	glDeleteShader(shaders2D[0]);
+	glCheckError();
 	glDeleteShader(shaders2D[1]);
+	glCheckError();
 
 	R_Printf(PRINT_ALL, "prog = %d\n", prog);
 	if(prog == 0)
@@ -891,6 +896,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 
 	shaderInfo->shaderProgram = prog;
 	GL3_UseProgram(prog);
+	glCheckError();
 
 	/*
 	// Bind the buffer object to the uniform blocks
@@ -946,6 +952,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	{
 		glUniform4f(shaderInfo->uniVblend, 0, 0, 0, 0);
 	}
+	glCheckError();
 
 	return true;
 
@@ -974,9 +981,11 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	shaderInfo->uniVblend = -1;
 
 	shaders3D[0] = CompileShader(GL_VERTEX_SHADER, vertexCommon3D, vertSrc);
+	glCheckError();
 	if(shaders3D[0] == 0)  return false;
 
 	shaders3D[1] = CompileShader(GL_FRAGMENT_SHADER, fragmentCommon3D, fragSrc);
+	glCheckError();
 	if(shaders3D[1] == 0)
 	{
 		glDeleteShader(shaders3D[0]);
@@ -984,6 +993,7 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	}
 
 	prog = CreateShaderProgram(2, shaders3D);
+	glCheckError();
 
 	if(prog == 0)
 	{
@@ -991,6 +1001,7 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	}
 
 	GL3_UseProgram(prog);
+	glCheckError();
 
 	/*
 	// Bind the buffer object to the uniform blocks
@@ -1087,16 +1098,21 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 
 	// I think the shaders aren't needed anymore once they're linked into the program
 	glDeleteShader(shaders3D[0]);
+	glCheckError();
 	glDeleteShader(shaders3D[1]);
+	glCheckError();
 
 	return true;
 
 err_cleanup:
 
 	glDeleteShader(shaders3D[0]);
+	glCheckError();
 	glDeleteShader(shaders3D[1]);
+	glCheckError();
 
 	if(prog != 0)  glDeleteProgram(prog);
+	glCheckError();
 
 	return false;
 }
@@ -1109,6 +1125,7 @@ static void initUBOs(void)
 	gl3state.uniCommonData.color = HMM_Vec4(1, 1, 1, 1);
 
 	glGenBuffers(1, &gl3state.uniCommonUBO);
+	glCheckError();
 	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniCommonUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNICOMMON, gl3state.uniCommonUBO);
@@ -1119,6 +1136,7 @@ static void initUBOs(void)
 	gl3state.uni2DData.transMat4 = HMM_Mat4();
 
 	glGenBuffers(1, &gl3state.uni2DUBO);
+	glCheckError();
 	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni2DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI2D, gl3state.uni2DUBO);
@@ -1136,6 +1154,7 @@ static void initUBOs(void)
 	gl3state.uni3DData.particleFadeFactor = gl3_particle_fade_factor->value;
 
 	glGenBuffers(1, &gl3state.uni3DUBO);
+	glCheckError();
 	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni3DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI3D, gl3state.uni3DUBO);
@@ -1143,6 +1162,7 @@ static void initUBOs(void)
 	*/
 
 	glGenBuffers(1, &gl3state.uniLightsUBO);
+	glCheckError();
 	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniLightsUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNILIGHTS, gl3state.uniLightsUBO);
@@ -1241,6 +1261,7 @@ static qboolean createShaders(void)
 		R_Printf(PRINT_ALL, "WARNING: Failed to create shader program for rendering flat-colored models!\n");
 		return false;
 	}
+	glCheckError();
 
 	const char* particleFrag = fragmentSrcParticles;
 	if(gl3_particle_square->value != 0.0f)
@@ -1253,6 +1274,7 @@ static qboolean createShaders(void)
 		R_Printf(PRINT_ALL, "WARNING: Failed to create shader program for rendering particles!\n");
 		return false;
 	}
+	glCheckError();
 
 	gl3state.currentShaderProgram = 0;
 
@@ -1262,6 +1284,7 @@ static qboolean createShaders(void)
 qboolean GL3_InitShaders(void)
 {
 	initUBOs();
+	glCheckError();
 
 	return createShaders();
 }
