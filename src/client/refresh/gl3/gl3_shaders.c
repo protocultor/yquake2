@@ -37,7 +37,7 @@ CompileShader(GLenum shaderType, const char* shaderSrc, const char* shaderSrc2)
 	GLuint shader = glCreateShader(shaderType);
 
 #ifdef YQ2_GL3_GLES3
-	const char* version = "";
+	const char* version = "#version 100\n";
 	if (shaderType == GL_FRAGMENT_SHADER)
 	{
 		version = "#version 100\nprecision mediump float;\n";
@@ -45,15 +45,14 @@ CompileShader(GLenum shaderType, const char* shaderSrc, const char* shaderSrc2)
 #else // Desktop GL
 	const char* version = "#version 150\n";
 #endif
-	// const char* sources[3] = { version, shaderSrc, shaderSrc2 };
-	const char* sources[2] = { shaderSrc, shaderSrc2 };
-	int numSources = shaderSrc2 != NULL ? 2 : 1;
+	const char* sources[3] = { version, shaderSrc, shaderSrc2 };
+	int numSources = shaderSrc2 != NULL ? 3 : 2;
 
 	glShaderSource(shader, numSources, sources, NULL);
 	glCompileShader(shader);
 	GLint status;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-	eprintf("CompileShader status = %d\n", status);
+	// eprintf("CompileShader status = %d\n", status);
 	if(status != GL_TRUE)
 	{
 		char buf[2048];
@@ -89,6 +88,11 @@ CompileShader(GLenum shaderType, const char* shaderSrc, const char* shaderSrc2)
 			*/
 		}
 		eprintf("ERROR: Compiling %s Shader failed: %s\n", shaderTypeStr, bufPtr);
+		eprintf("Shader source: %s\n", shaderSrc);
+		if (numSources == 3)
+		{
+			eprintf("Shader2 source: %s\n", shaderSrc2);
+		}
 		glDeleteShader(shader);
 
 		if(bufPtr != buf)  free(bufPtr);
@@ -131,7 +135,7 @@ CreateShaderProgram(int numShaders, const GLuint* shaders)
 
 	GLint status;
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &status);
-	eprintf("CreateShaderProgram status = %d\n", status);
+	// eprintf("CreateShaderProgram status = %d\n", status);
 	if(status != GL_TRUE)
 	{
 		char buf[2048];
@@ -182,10 +186,7 @@ static const char* vertexSrc2D = MULTILINE_STRING(
 		attribute vec2 texCoord; // GL3_ATTRIB_TEXCOORD
 
 		// for UBO shared between 2D shaders
-		layout (std140) uniform uni2D
-		{
-			mat4 trans;
-		};
+		uniform mat4 trans;
 
 		varying vec2 passTexCoord;
 
@@ -198,21 +199,16 @@ static const char* vertexSrc2D = MULTILINE_STRING(
 
 static const char* fragmentSrc2D = MULTILINE_STRING(
 
-		attribute vec2 passTexCoord;
+		varying vec2 passTexCoord;
 
 		// for UBO shared between all shaders (incl. 2D)
-		layout (std140) uniform uniCommon
-		{
-			float gamma;
-			float intensity;
-			float intensity2D; // for HUD, menu etc
+		uniform float gamma;
+		uniform float intensity;
+		uniform float intensity2D; // for HUD, menu etc
 
-			vec4 color;
-		};
+		uniform vec4 color;
 
 		uniform sampler2D tex;
-
-		varying vec4 outColor;
 
 		void main()
 		{
@@ -225,29 +221,16 @@ static const char* fragmentSrc2D = MULTILINE_STRING(
 
 			// apply gamma correction and intensity
 			texel.rgb *= intensity2D;
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
 static const char* fragmentSrc2Dpostprocess = MULTILINE_STRING(
-		attribute vec2 passTexCoord;
-
-		// for UBO shared between all shaders (incl. 2D)
-		// TODO: not needed here, remove?
-		layout (std140) uniform uniCommon
-		{
-			float gamma;
-			float intensity;
-			float intensity2D; // for HUD, menu etc
-
-			vec4 color;
-		};
+		varying vec2 passTexCoord;
 
 		uniform sampler2D tex;
 		uniform vec4 v_blend;
-
-		varying vec4 outColor;
 
 		void main()
 		{
@@ -257,23 +240,12 @@ static const char* fragmentSrc2Dpostprocess = MULTILINE_STRING(
 			// apply the v_blend, usually blended as a colored quad with:
 			// glBlendEquation(GL_FUNC_ADD); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			res.rgb = v_blend.a * v_blend.rgb + (1.0 - v_blend.a)*res.rgb;
-			outColor =  res;
+			gl_FragColor =  res;
 		}
 );
 
 static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
-		attribute vec2 passTexCoord;
-
-		// for UBO shared between all shaders (incl. 2D)
-		// TODO: not needed here, remove?
-		layout (std140) uniform uniCommon
-		{
-			float gamma;
-			float intensity;
-			float intensity2D; // for HUD, menu etc
-
-			vec4 color;
-		};
+		varying vec2 passTexCoord;
 
 		const float PI = 3.14159265358979323846;
 
@@ -281,8 +253,6 @@ static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
 
 		uniform float time;
 		uniform vec4 v_blend;
-
-		varying vec4 outColor;
 
 		void main()
 		{
@@ -307,7 +277,7 @@ static const char* fragmentSrc2DpostprocessWater = MULTILINE_STRING(
 			// apply the v_blend, usually blended as a colored quad with:
 			// glBlendEquation(GL_FUNC_ADD); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			res.rgb = v_blend.a * v_blend.rgb + (1.0 - v_blend.a)*res.rgb;
-			outColor =  res;
+			gl_FragColor =  res;
 		}
 );
 
@@ -317,10 +287,7 @@ static const char* vertexSrc2Dcolor = MULTILINE_STRING(
 		attribute vec2 position; // GL3_ATTRIB_POSITION
 
 		// for UBO shared between 2D shaders
-		layout (std140) uniform uni2D
-		{
-			mat4 trans;
-		};
+		uniform mat4 trans;
 
 		void main()
 		{
@@ -331,22 +298,17 @@ static const char* vertexSrc2Dcolor = MULTILINE_STRING(
 static const char* fragmentSrc2Dcolor = MULTILINE_STRING(
 
 		// for UBO shared between all shaders (incl. 2D)
-		layout (std140) uniform uniCommon
-		{
-			float gamma;
-			float intensity;
-			float intensity2D; // for HUD, menus etc
+		uniform float gamma;
+		uniform float intensity;
+		uniform float intensity2D; // for HUD, menus etc
 
-			vec4 color;
-		};
-
-		varying vec4 outColor;
+		uniform vec4 color;
 
 		void main()
 		{
 			vec3 col = color.rgb * intensity2D;
-			outColor.rgb = pow(col, vec3(gamma));
-			outColor.a = color.a;
+			gl_FragColor.rgb = pow(col, vec3(gamma));
+			gl_FragColor.a = color.a;
 		}
 );
 
@@ -359,57 +321,41 @@ static const char* vertexCommon3D = MULTILINE_STRING(
 		attribute vec2 lmTexCoord; // GL3_ATTRIB_LMTEXCOORD
 		attribute vec4 vertColor;  // GL3_ATTRIB_COLOR
 		attribute vec3 normal;     // GL3_ATTRIB_NORMAL
-		attribute uint lightFlags; // GL3_ATTRIB_LIGHTFLAGS
+		attribute float lightFlags;  // GL3_ATTRIB_LIGHTFLAGS
 
 		varying vec2 passTexCoord;
 
 		// for UBO shared between all 3D shaders
-		layout (std140) uniform uni3D
-		{
-			mat4 transProjView;
-			mat4 transModel;
+		uniform mat4 transProjView;
+		uniform mat4 transModel;
 
-			float scroll; // for SURF_FLOWING
-			float time;
-			float alpha;
-			float overbrightbits;
-			float particleFadeFactor;
-			float _pad_1; // AMDs legacy windows driver needs this, otherwise uni3D has wrong size
-			float _pad_2;
-			float _pad_3;
-		};
+		uniform float scroll; // for SURF_FLOWING
+		uniform float time;
+		uniform float alpha;
+		uniform float overbrightbits;
+		uniform float particleFadeFactor;
 );
 
 static const char* fragmentCommon3D = MULTILINE_STRING(
 
-		attribute vec2 passTexCoord;
-
-		varying vec4 outColor;
+		varying vec2 passTexCoord;
 
 		// for UBO shared between all shaders (incl. 2D)
-		layout (std140) uniform uniCommon
-		{
-			float gamma; // this is 1.0/vid_gamma
-			float intensity;
-			float intensity2D; // for HUD, menus etc
+		uniform float gamma; // this is 1.0/vid_gamma
+		uniform float intensity;
+		uniform float intensity2D; // for HUD, menus etc
 
-			vec4 color; // really?
-		};
+		uniform vec4 color; // really?
+
 		// for UBO shared between all 3D shaders
-		layout (std140) uniform uni3D
-		{
-			mat4 transProjView;
-			mat4 transModel;
+		uniform mat4 transProjView;
+		uniform mat4 transModel;
 
-			float scroll; // for SURF_FLOWING
-			float time;
-			float alpha;
-			float overbrightbits;
-			float particleFadeFactor;
-			float _pad_1; // AMDs legacy windows driver needs this, otherwise uni3D has wrong size
-			float _pad_2;
-			float _pad_3;
-		};
+		uniform float scroll; // for SURF_FLOWING
+		uniform float time;
+		uniform float alpha;
+		uniform float overbrightbits;
+		uniform float particleFadeFactor;
 );
 
 static const char* vertexSrc3D = MULTILINE_STRING(
@@ -441,7 +387,7 @@ static const char* vertexSrc3Dlm = MULTILINE_STRING(
 		varying vec2 passLMcoord;
 		varying vec3 passWorldCoord;
 		varying vec3 passNormal;
-		flat varying uint passLightFlags;
+		flat varying float passLightFlags;
 
 		void main()
 		{
@@ -449,7 +395,7 @@ static const char* vertexSrc3Dlm = MULTILINE_STRING(
 			passLMcoord = lmTexCoord;
 			vec4 worldCoord = transModel * vec4(position, 1.0);
 			passWorldCoord = worldCoord.xyz;
-			vec4 worldNormal = transModel * vec4(normal, 0.0f);
+			vec4 worldNormal = transModel * vec4(normal, 0.0);
 			passNormal = normalize(worldNormal.xyz);
 			passLightFlags = lightFlags;
 
@@ -464,7 +410,7 @@ static const char* vertexSrc3DlmFlow = MULTILINE_STRING(
 		varying vec2 passLMcoord;
 		varying vec3 passWorldCoord;
 		varying vec3 passNormal;
-		flat varying uint passLightFlags;
+		flat varying float passLightFlags;
 
 		void main()
 		{
@@ -472,7 +418,7 @@ static const char* vertexSrc3DlmFlow = MULTILINE_STRING(
 			passLMcoord = lmTexCoord;
 			vec4 worldCoord = transModel * vec4(position, 1.0);
 			passWorldCoord = worldCoord.xyz;
-			vec4 worldNormal = transModel * vec4(normal, 0.0f);
+			vec4 worldNormal = transModel * vec4(normal, 0.0);
 			passNormal = normalize(worldNormal.xyz);
 			passLightFlags = lightFlags;
 
@@ -492,8 +438,8 @@ static const char* fragmentSrc3D = MULTILINE_STRING(
 
 			// apply intensity and gamma
 			texel.rgb *= intensity;
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -515,8 +461,8 @@ static const char* fragmentSrc3Dwater = MULTILINE_STRING(
 
 			// apply intensity and gamma
 			texel.rgb *= intensity*0.5;
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -533,12 +479,10 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 			// (otherwise lightIntensity always contained 1 there)
 		};
 
-		layout (std140) uniform uniLights
-		{
-			DynLight dynLights[32];
-			uint numDynLights;
-			uint _pad1; uint _pad2; uint _pad3; // FFS, AMD!
-		};
+		// uniform uniLights
+		uniform DynLight dynLights[32];
+		uniform int numDynLights;
+		// uint _pad1; uint _pad2; uint _pad3; // FFS, AMD!
 
 		uniform sampler2D tex;
 
@@ -549,10 +493,10 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 
 		uniform vec4 lmScales[4];
 
-		attribute vec2 passLMcoord;
-		attribute vec3 passWorldCoord;
-		attribute vec3 passNormal;
-		flat attribute uint passLightFlags;
+		varying vec2 passLMcoord;
+		varying vec3 passWorldCoord;
+		varying vec3 passNormal;
+		flat varying float passLightFlags;	// dafuq hago con esto
 
 		void main()
 		{
@@ -567,17 +511,18 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 			lmTex     += texture2D(lightmap2, passLMcoord) * lmScales[2];
 			lmTex     += texture2D(lightmap3, passLMcoord) * lmScales[3];
 
-			if(passLightFlags != 0u)
+			if(passLightFlags != 0.0)
 			{
 				// TODO: or is hardcoding 32 better?
-				for(uint i=0u; i<numDynLights; ++i)
+				// for(int i=0; i<numDynLights; ++i)
+				for(int i=0; i<32; ++i)
 				{
 					// I made the following up, it's probably not too cool..
 					// it basically checks if the light is on the right side of the surface
 					// and, if it is, sets intensity according to distance between light and pixel on surface
 
 					// dyn light number i does not affect this plane, just skip it
-					if((passLightFlags & (1u << i)) == 0u)  continue;
+					// if((passLightFlags & (1 << i)) == 0)  continue;	// CORREGIR!
 
 					float intens = dynLights[i].lightColor.a;
 
@@ -594,16 +539,15 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 					// also factor in angle between light and point on surface
 					fact *= max(0.0, dot(passNormal, normalize(lightToPos)));
 
-
 					lmTex.rgb += dynLights[i].lightColor.rgb * fact * (1.0/256.0);
 				}
 			}
 
 			lmTex.rgb *= overbrightbits;
-			outColor = lmTex*texel;
-			outColor.rgb = pow(outColor.rgb, vec3(gamma)); // apply gamma correction to result
+			gl_FragColor = lmTex*texel;
+			gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(gamma)); // apply gamma correction to result
 
-			outColor.a = 1.0; // lightmaps aren't used with translucent surfaces
+			gl_FragColor.a = 1.0; // lightmaps aren't used with translucent surfaces
 		}
 );
 
@@ -620,7 +564,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 			// (otherwise lightIntensity always contained 1 there)
 		};
 
-		layout (std140) uniform uniLights
+		uniform uniLights
 		{
 			DynLight dynLights[32];
 			uint numDynLights;
@@ -690,10 +634,10 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 			lmTex.rgb = vec3(0.333 * (lmTex.r+lmTex.g+lmTex.b));
 
 			lmTex.rgb *= overbrightbits;
-			outColor = lmTex*texel;
-			outColor.rgb = pow(outColor.rgb, vec3(gamma)); // apply gamma correction to result
+			gl_FragColor = lmTex*texel;
+			gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(gamma)); // apply gamma correction to result
 
-			outColor.a = 1; // lightmaps aren't used with translucent surfaces
+			gl_FragColor.a = 1; // lightmaps aren't used with translucent surfaces
 		}
 );
 
@@ -707,8 +651,8 @@ static const char* fragmentSrc3Dcolor = MULTILINE_STRING(
 
 			// apply gamma correction and intensity
 			// texel.rgb *= intensity; TODO: use intensity here? (this is used for beams)
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -726,8 +670,8 @@ static const char* fragmentSrc3Dsky = MULTILINE_STRING(
 
 			// apply gamma correction
 			// texel.rgb *= intensity; // TODO: really no intensity for sky?
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -743,8 +687,8 @@ static const char* fragmentSrc3Dsprite = MULTILINE_STRING(
 
 			// apply gamma correction and intensity
 			texel.rgb *= intensity;
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -763,8 +707,8 @@ static const char* fragmentSrc3DspriteAlpha = MULTILINE_STRING(
 
 			// apply gamma correction and intensity
 			texel.rgb *= intensity;
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a*alpha; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -799,7 +743,7 @@ static const char* fragmentSrcAlias = MULTILINE_STRING(
 
 		uniform sampler2D tex;
 
-		attribute vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -810,8 +754,8 @@ static const char* fragmentSrcAlias = MULTILINE_STRING(
 			texel.a *= alpha; // is alpha even used here?
 			texel *= min(vec4(1.5), passColor);
 
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -819,7 +763,7 @@ static const char* fragmentSrcAliasColor = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		attribute vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -828,8 +772,8 @@ static const char* fragmentSrcAliasColor = MULTILINE_STRING(
 			// apply gamma correction and intensity
 			// texel.rgb *= intensity; // TODO: color-only rendering probably shouldn't use intensity?
 			texel.a *= alpha; // is alpha even used here?
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
-			outColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -855,7 +799,7 @@ static const char* fragmentSrcParticles = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		attribute vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -868,12 +812,12 @@ static const char* fragmentSrcParticles = MULTILINE_STRING(
 
 			// apply gamma correction and intensity
 			//texel.rgb *= intensity; TODO: intensity? Probably not?
-			outColor.rgb = pow(texel.rgb, vec3(gamma));
+			gl_FragColor.rgb = pow(texel.rgb, vec3(gamma));
 
 			// I want the particles to fade out towards the edge, the following seems to look nice
 			texel.a *= min(1.0, particleFadeFactor*(1.0 - distSquared));
 
-			outColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
+			gl_FragColor.a = texel.a; // I think alpha shouldn't be modified by gamma and intensity
 		}
 );
 
@@ -881,7 +825,7 @@ static const char* fragmentSrcParticlesSquare = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
-		attribute vec4 passColor;
+		varying vec4 passColor;
 
 		void main()
 		{
@@ -889,8 +833,8 @@ static const char* fragmentSrcParticlesSquare = MULTILINE_STRING(
 			// so far we didn't use gamma correction for square particles, but this way
 			// uniCommon is referenced so hopefully Intels Ivy Bridge HD4000 GPU driver
 			// for Windows stops shitting itself (see https://github.com/yquake2/yquake2/issues/391)
-			outColor.rgb = pow(passColor.rgb, vec3(gamma));
-			outColor.a = passColor.a;
+			gl_FragColor.rgb = pow(passColor.rgb, vec3(gamma));
+			gl_FragColor.a = passColor.a;
 		}
 );
 
@@ -1164,19 +1108,22 @@ static void initUBOs(void)
 	gl3state.uniCommonData.intensity2D = gl3_intensity_2D->value;
 	gl3state.uniCommonData.color = HMM_Vec4(1, 1, 1, 1);
 
-	/*
 	glGenBuffers(1, &gl3state.uniCommonUBO);
+	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniCommonUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNICOMMON, gl3state.uniCommonUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uniCommonData), &gl3state.uniCommonData, GL_DYNAMIC_DRAW);
+	*/
 
 	// the matrix will be set to something more useful later, before being used
 	gl3state.uni2DData.transMat4 = HMM_Mat4();
 
 	glGenBuffers(1, &gl3state.uni2DUBO);
+	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni2DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI2D, gl3state.uni2DUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uni2DData), &gl3state.uni2DData, GL_DYNAMIC_DRAW);
+	*/
 
 	// the matrices will be set to something more useful later, before being used
 	gl3state.uni3DData.transProjViewMat4 = HMM_Mat4();
@@ -1189,17 +1136,20 @@ static void initUBOs(void)
 	gl3state.uni3DData.particleFadeFactor = gl3_particle_fade_factor->value;
 
 	glGenBuffers(1, &gl3state.uni3DUBO);
+	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni3DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI3D, gl3state.uni3DUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uni3DData), &gl3state.uni3DData, GL_DYNAMIC_DRAW);
+	*/
 
 	glGenBuffers(1, &gl3state.uniLightsUBO);
+	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniLightsUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNILIGHTS, gl3state.uniLightsUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uniLightsData), &gl3state.uniLightsData, GL_DYNAMIC_DRAW);
+	*/
 
 	gl3state.currentUBO = gl3state.uniLightsUBO;
-	*/
 }
 
 static qboolean createShaders(void)

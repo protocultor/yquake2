@@ -164,7 +164,7 @@ endif
 #   and the game code requires it.
 #  -fvisibility=hidden to keep symbols hidden. This is
 #   mostly best practice and not really necessary.
-override CFLAGS += -std=gnu99 -fno-strict-aliasing -fwrapv -fvisibility=hidden
+override CFLAGS += -fno-strict-aliasing -fwrapv
 
 # -MMD to generate header dependencies. Unsupported by
 #  the Clang shipped with OS X.
@@ -345,7 +345,7 @@ ifndef ASAN
 ifndef UBSAN
 ifneq ($(YQ2_OSTYPE), Darwin)
 ifneq ($(YQ2_OSTYPE), OpenBSD)
-override LDFLAGS += -Wl,--no-undefined
+override LDFLAGS += -Wl,--no-undefined -g
 endif
 endif
 endif
@@ -1112,10 +1112,8 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/yquake2.exe : $(CLIENT_OBJS) icon
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) build/icon/icon.res $(CLIENT_OBJS) $(LDLIBS) $(SDLLDFLAGS) -o $@
-	$(Q)strip $@
 release/quake2.exe : src/win-wrapper/wrapper.c icon
 	$(Q)$(CC) -Wall -mwindows build/icon/icon.res src/win-wrapper/wrapper.c -o $@
-	$(Q)strip $@
 else
 release/quake2 : $(CLIENT_OBJS)
 	@echo "===> LD $@"
@@ -1127,7 +1125,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/q2ded.exe : $(SERVER_OBJS) icon
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) build/icon/icon.res $(SERVER_OBJS) $(LDLIBS) $(SDLLDFLAGS) -o $@
-	$(Q)strip $@
 else
 release/q2ded : $(SERVER_OBJS)
 	@echo "===> LD $@"
@@ -1139,7 +1136,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/ref_gl1.dll : $(REFGL1_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) $(REFGL1_OBJS) $(LDLIBS) $(DLL_SDLLDFLAGS) -o $@
-	$(Q)strip $@
 else ifeq ($(YQ2_OSTYPE), Darwin)
 release/ref_gl1.dylib : $(REFGL1_OBJS)
 	@echo "===> LD $@"
@@ -1155,7 +1151,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/ref_gl3.dll : $(REFGL3_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) $(REFGL3_OBJS) $(LDLIBS) $(DLL_SDLLDFLAGS) -o $@
-	$(Q)strip $@
 else ifeq ($(YQ2_OSTYPE), Darwin)
 release/ref_gl3.dylib : $(REFGL3_OBJS)
 	@echo "===> LD $@"
@@ -1171,7 +1166,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/ref_gles3.dll : $(REFGLES3_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) $(REFGLES3_OBJS) $(LDLIBS) $(DLL_SDLLDFLAGS) -o $@
-	$(Q)strip $@
 else ifeq ($(YQ2_OSTYPE), Darwin)
 release/ref_gles3.dylib : $(REFGLES3_OBJS)
 	@echo "===> LD $@"
@@ -1187,7 +1181,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/ref_soft.dll : $(REFSOFT_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) $(REFSOFT_OBJS) $(LDLIBS) $(DLL_SDLLDFLAGS) -o $@
-	$(Q)strip $@
 else ifeq ($(YQ2_OSTYPE), Darwin)
 release/ref_soft.dylib : $(REFSOFT_OBJS)
 	@echo "===> LD $@"
@@ -1203,7 +1196,6 @@ ifeq ($(YQ2_OSTYPE), Windows)
 release/baseq2/game.dll : $(GAME_OBJS)
 	@echo "===> LD $@"
 	${Q}$(CC) $(LDFLAGS) $(GAME_OBJS) $(LDLIBS) -o $@
-	$(Q)strip $@
 else ifeq ($(YQ2_OSTYPE), Darwin)
 release/baseq2/game.dylib : $(GAME_OBJS)
 	@echo "===> LD $@"

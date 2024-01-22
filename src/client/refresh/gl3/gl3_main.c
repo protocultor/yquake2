@@ -181,10 +181,19 @@ static void
 GL3_Strings(void)
 {
 	GLint i, numExtensions;
+#ifdef YQ2_GL3_GLES3
+	GLint maxTextureImageUnits, maxFragmentUniformVectors;
+#endif
 	R_Printf(PRINT_ALL, "GL_VENDOR: %s\n", gl3config.vendor_string);
 	R_Printf(PRINT_ALL, "GL_RENDERER: %s\n", gl3config.renderer_string);
 	R_Printf(PRINT_ALL, "GL_VERSION: %s\n", gl3config.version_string);
 	R_Printf(PRINT_ALL, "GL_SHADING_LANGUAGE_VERSION: %s\n", gl3config.glsl_version_string);
+#ifdef YQ2_GL3_GLES3
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureImageUnits);
+	glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &maxFragmentUniformVectors);
+	R_Printf(PRINT_ALL, "GL_MAX_TEXTURE_IMAGE_UNITS: %d\n", maxTextureImageUnits);
+	R_Printf(PRINT_ALL, "GL_MAX_FRAGMENT_UNIFORM_VECTORS: %d\n", maxFragmentUniformVectors);
+#endif
 
 #ifdef GL_NUM_EXTENSIONS
 	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);

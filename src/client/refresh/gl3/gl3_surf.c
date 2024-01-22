@@ -44,11 +44,10 @@ extern int numgl3textures;
 
 void GL3_SurfInit(void)
 {
-	/*
 	// init the VAO and VBO for the standard vertexdata: 10 floats and 1 uint
 	// (X, Y, Z), (S, T), (LMS, LMT), (normX, normY, normZ) ; lightFlags - last two groups for lightmap/dynlights
 
-	glGenVertexArrays(1, &gl3state.vao3D);
+	// glGenVertexArrays(1, &gl3state.vao3D);
 	GL3_BindVAO(gl3state.vao3D);
 
 	glGenBuffers(1, &gl3state.vbo3D);
@@ -81,7 +80,7 @@ void GL3_SurfInit(void)
 	// init VAO and VBO for model vertexdata: 9 floats
 	// (X,Y,Z), (S,T), (R,G,B,A)
 
-	glGenVertexArrays(1, &gl3state.vaoAlias);
+	// glGenVertexArrays(1, &gl3state.vaoAlias);
 	GL3_BindVAO(gl3state.vaoAlias);
 
 	glGenBuffers(1, &gl3state.vboAlias);
@@ -101,7 +100,7 @@ void GL3_SurfInit(void)
 	// init VAO and VBO for particle vertexdata: 9 floats
 	// (X,Y,Z), (point_size,distace_to_camera), (R,G,B,A)
 
-	glGenVertexArrays(1, &gl3state.vaoParticle);
+	// glGenVertexArrays(1, &gl3state.vaoParticle);
 	GL3_BindVAO(gl3state.vaoParticle);
 
 	glGenBuffers(1, &gl3state.vboParticle);
@@ -116,24 +115,21 @@ void GL3_SurfInit(void)
 
 	glEnableVertexAttribArray(GL3_ATTRIB_COLOR);
 	qglVertexAttribPointer(GL3_ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), 5*sizeof(GLfloat));
-	*/
 }
 
 void GL3_SurfShutdown(void)
 {
-	/*
 	glDeleteBuffers(1, &gl3state.vbo3D);
 	gl3state.vbo3D = 0;
-	glDeleteVertexArrays(1, &gl3state.vao3D);
+	// glDeleteVertexArrays(1, &gl3state.vao3D);
 	gl3state.vao3D = 0;
 
 	glDeleteBuffers(1, &gl3state.eboAlias);
 	gl3state.eboAlias = 0;
 	glDeleteBuffers(1, &gl3state.vboAlias);
 	gl3state.vboAlias = 0;
-	glDeleteVertexArrays(1, &gl3state.vaoAlias);
+	// glDeleteVertexArrays(1, &gl3state.vaoAlias);
 	gl3state.vaoAlias = 0;
-	*/
 }
 
 /*
