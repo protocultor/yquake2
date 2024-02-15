@@ -129,8 +129,37 @@ drawTexturedRectangle(float x, float y, float w, float h,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
 	glCheckError();
 
+
+	// Proto: from init, have to force the correct shader
+	GL3_UseProgram(gl3state.si2D.shaderProgram);
+	glCheckError();
+
+	// copied from shaders... this shouldn't be here... maybe?
+	glUniformMatrix4fv( gl3state.si2D.uniform[UNILOC_TRANS], 1, GL_FALSE,
+				(const GLfloat *)&gl3state.uni2DData.transMat4);
+	// See GL3_BeginFrame... should all of these continue to be in gl3state?
+	glUniform1f( gl3state.si2D.uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
+	glUniform1f( gl3state.si2D.uniform[UNILOC_INTENSITY_2D], gl3state.uniCommonData.intensity2D );
+	glCheckError();
+
+	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
+	// Note: the glVertexAttribPointer() configuration is stored in the VAO, not the shader or sth
+	//       (that's why I use one VAO per 2D shader)
+	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 0);
+	glCheckError();
+
+	glEnableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 2*sizeof(float));
+	glCheckError();
+	// end copy
+
+
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glCheckError();
+
+	// Proto: Needed for my "super-copy" above
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
+	glDisableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
 
 	//glMultiDrawArrays(mode, first, count, drawcount) ??
 }
@@ -215,6 +244,7 @@ void
 GL3_Draw_StretchPic(int x, int y, int w, int h, char *pic)
 {
 	gl3image_t *gl = GL3_Draw_FindPic(pic);
+	glCheckError();
 
 	if (!gl)
 	{
@@ -336,6 +366,20 @@ GL3_Draw_Fill(int x, int y, int w, int h, int c)
 	GL3_BindVAO(vao2Dcolor);
 	glCheckError();
 
+	// Proto: copied again... check the need to reiterate these uniforms all the time
+	glUniformMatrix4fv( gl3state.si2Dcolor.uniform[UNILOC_TRANS], 1, GL_FALSE,
+				(const GLfloat *)&gl3state.uni2DData.transMat4);
+	// See GL3_BeginFrame... should all of these continue to be in gl3state?
+	glUniform1f( gl3state.si2Dcolor.uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
+	glUniform1f( gl3state.si2Dcolor.uniform[UNILOC_INTENSITY_2D], gl3state.uniCommonData.intensity2D );
+	glUniform4fv( gl3state.si2Dcolor.uniform[UNILOC_COLOR], 1, (const GLfloat *)&gl3state.uniCommonData.color );
+	glCheckError();
+
+	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
+	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), 0);
+	glCheckError();
+	// end copy
+
 	GL3_BindVBO(vbo2D);
 	glCheckError();
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
@@ -343,6 +387,9 @@ GL3_Draw_Fill(int x, int y, int w, int h, int c)
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glCheckError();
+
+	// Proto: Needed for my copy above
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
 }
 
 // in GL1 this is called R_Flash() (which just calls R_PolyBlend())

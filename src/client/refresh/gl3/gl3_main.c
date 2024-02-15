@@ -180,9 +180,10 @@ GL3_RotateForEntity(entity_t *e)
 static void
 GL3_Strings(void)
 {
-	GLint i, numExtensions;
 #ifdef YQ2_GL3_GLES3
 	GLint maxTextureImageUnits, maxFragmentUniformVectors;
+#else
+	GLint i, numExtensions;
 #endif
 	R_Printf(PRINT_ALL, "GL_VENDOR: %s\n", gl3config.vendor_string);
 	R_Printf(PRINT_ALL, "GL_RENDERER: %s\n", gl3config.renderer_string);
@@ -195,7 +196,9 @@ GL3_Strings(void)
 	R_Printf(PRINT_ALL, "GL_MAX_FRAGMENT_UNIFORM_VECTORS: %d\n", maxFragmentUniformVectors);
 #endif
 
-#ifdef GL_NUM_EXTENSIONS
+#ifdef YQ2_GL3_GLES3
+	R_Printf(PRINT_ALL, "GL_EXTENSIONS: %s\n", (char *)glGetString(GL_EXTENSIONS));
+#else
 	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
 
 	R_Printf(PRINT_ALL, "GL_EXTENSIONS:");
@@ -204,9 +207,7 @@ GL3_Strings(void)
 		R_Printf(PRINT_ALL, " %s", (const char*)glGetStringi(GL_EXTENSIONS, i));
 	}
 	R_Printf(PRINT_ALL, "\n");
-#else
-	R_Printf(PRINT_ALL, "GL_EXTENSIONS: %s\n", (char *)glGetString(GL_EXTENSIONS));
-#endif // GL_NUM_EXTENSIONS
+#endif // YQ2_GL3_GLES3
 }
 
 static void
@@ -1290,16 +1291,19 @@ GL3_SetGL2D(void)
 #endif // 0
 
 	glViewport(x, y, w, h);
+	glCheckError();
 
 	hmm_mat4 transMatr = HMM_Orthographic(0, vid.width, vid.height, 0, -99999, 99999);
 
 	gl3state.uni2DData.transMat4 = transMatr;
 
 	GL3_UpdateUBO2D();
+	glCheckError();
 
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
+	glCheckError();
 }
 
 // equivalent to R_x * R_y * R_z where R_x is the trans matrix for rotating around X axis for aroundXdeg
@@ -1457,6 +1461,7 @@ SetupGL(void)
 	{
 		glViewport(x, y2, w, h);
 	}
+	glCheckError();
 
 	/* set up projection matrix (eye coordinates -> clip coordinates) */
 	{
@@ -1466,6 +1471,7 @@ SetupGL(void)
 	}
 
 	glCullFace(GL_FRONT);
+	glCheckError();
 
 	/* set up view matrix (world coordinates -> eye coordinates) */
 	{

@@ -58,7 +58,9 @@
 
 #include "HandmadeMath.h"
 
-#if 0 // only use this for development ..
+#ifdef DEBUG // only use this for development ..
+extern void glCheckError_(const char * file, const char * function, int line);
+#define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)
 #define STUB_ONCE(msg) do { \
 		static int show=1; \
 		if(show) { \
@@ -68,6 +70,7 @@
 	} while(0);
 #else // .. so make this a no-op in released code
 #define STUB_ONCE(msg)
+#define glCheckError()
 #endif
 
 // a wrapper around glVertexAttribPointer() to stay sane
@@ -75,7 +78,7 @@
 static inline void
 qglVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLintptr offset)
 {
-	// glVertexAttribPointer(index, size, type, normalized, stride, (const void*)offset);
+	glVertexAttribPointer(index, size, type, normalized, stride, (const void*)offset);
 }
 
 static inline void
@@ -92,6 +95,25 @@ enum {
 	GL3_ATTRIB_COLOR      = 3, // per-vertex color
 	GL3_ATTRIB_NORMAL     = 4, // vertex normal
 	GL3_ATTRIB_LIGHTFLAGS = 5  // uint, each set bit means "dyn light i affects this surface"
+};
+
+// locations for uniforms in every shader
+enum {
+	UNILOC_GAMMA	= 0,
+	UNILOC_INTENSITY,
+	UNILOC_INTENSITY_2D,
+	UNILOC_COLOR,
+	UNILOC_V_BLEND,
+	UNILOC_TIME,
+	UNILOC_LIGHTMAP_SCALES = UNILOC_TIME,
+	UNILOC_TRANS,
+	UNILOC_TRANS_PROJ_VIEW = UNILOC_TRANS,
+	UNILOC_TRANS_MODEL,
+	UNILOC_SCROLL,
+	UNILOC_ALPHA,
+	UNILOC_OVERBRIGHTBITS,
+	UNILOC_PARTICLE_FADE_FACTOR,
+	UNILOC_MAX_UNIFORMS
 };
 
 // always using RGBA now, GLES3 on RPi4 doesn't work otherwise
@@ -132,6 +154,8 @@ typedef struct
 	GLuint shaderProgram;
 	GLint uniVblend;
 	GLint uniLmScalesOrTime; // for 3D it's lmScales, for 2D underwater PP it's time
+	// The following should replace the two above
+	GLint uniform[UNILOC_MAX_UNIFORMS];
 	hmm_vec4 lmScales[4];
 } gl3ShaderInfo_t;
 
@@ -141,9 +165,9 @@ typedef struct
 	GLfloat intensity;
 	GLfloat intensity2D; // for HUD, menus etc
 
-		// entries of std140 UBOs are aligned to multiples of their own size
-		// so we'll need to pad accordingly for following vec4
-		GLfloat _padding;
+	// entries of std140 UBOs are aligned to multiples of their own size
+	// so we'll need to pad accordingly for following vec4
+	//	GLfloat _padding;
 
 	hmm_vec4 color;
 } gl3UniCommon_t;
@@ -164,7 +188,7 @@ typedef struct
 	GLfloat overbrightbits; // gl3_overbrightbits, applied to lightmaps (and elsewhere to models)
 	GLfloat particleFadeFactor; // gl3_particle_fade_factor, higher => less fading out towards edges
 
-		GLfloat _padding[3]; // again, some padding to ensure this has right size
+	//	GLfloat _padding[3]; // again, some padding to ensure this has right size
 } gl3Uni3D_t;
 
 extern const hmm_mat4 gl3_identityMat4;
@@ -181,7 +205,7 @@ typedef struct
 {
 	gl3UniDynLight dynLights[MAX_DLIGHTS];
 	GLuint numDynLights;
-	GLfloat _padding[3];
+	// GLfloat _padding[3];
 } gl3UniLights_t;
 
 enum {
@@ -345,7 +369,9 @@ GL3_UseProgram(GLuint shaderProgram)
 	if(shaderProgram != gl3state.currentShaderProgram)
 	{
 		gl3state.currentShaderProgram = shaderProgram;
+		glCheckError();
 		glUseProgram(shaderProgram);
+		glCheckError();
 	}
 }
 
@@ -502,11 +528,6 @@ extern void GL3_UpdateUBOCommon(void);
 extern void GL3_UpdateUBO2D(void);
 extern void GL3_UpdateUBO3D(void);
 extern void GL3_UpdateUBOLights(void);
-
-#ifdef DEBUG
-extern void glCheckError_(const char * file, const char * function, int line);
-#define glCheckError() glCheckError_(__FILE__, __func__, __LINE__)
-#endif
 
 // ############ Cvars ###########
 

@@ -72,9 +72,9 @@ void GL3_SurfInit(void)
 	glEnableVertexAttribArray(GL3_ATTRIB_NORMAL);
 	qglVertexAttribPointer(GL3_ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, normal));
 
-	glEnableVertexAttribArray(GL3_ATTRIB_LIGHTFLAGS);
-	qglVertexAttribIPointer(GL3_ATTRIB_LIGHTFLAGS, 1, GL_UNSIGNED_INT, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, lightFlags));
-
+	// Gotta think what I'll do with lighting
+	// glEnableVertexAttribArray(GL3_ATTRIB_LIGHTFLAGS);
+	// qglVertexAttribIPointer(GL3_ATTRIB_LIGHTFLAGS, 1, GL_UNSIGNED_INT, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, lightFlags));
 
 
 	// init VAO and VBO for model vertexdata: 9 floats

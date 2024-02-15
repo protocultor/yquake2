@@ -203,7 +203,7 @@ static const char* fragmentSrc2D = MULTILINE_STRING(
 
 		// for UBO shared between all shaders (incl. 2D)
 		uniform float gamma;
-		uniform float intensity;
+		// uniform float intensity;	// optimized out, since it's not used here
 		uniform float intensity2D; // for HUD, menu etc
 
 		uniform vec4 color;
@@ -299,7 +299,7 @@ static const char* fragmentSrc2Dcolor = MULTILINE_STRING(
 
 		// for UBO shared between all shaders (incl. 2D)
 		uniform float gamma;
-		uniform float intensity;
+		// uniform float intensity;	// optimized out
 		uniform float intensity2D; // for HUD, menus etc
 
 		uniform vec4 color;
@@ -864,6 +864,7 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 	shaderInfo->shaderProgram = 0;
 	shaderInfo->uniLmScalesOrTime = -1;
 	shaderInfo->uniVblend = -1;
+	memset(shaderInfo->uniform, -1, UNILOC_MAX_UNIFORMS * sizeof(GLint));
 
 	shaders2D[0] = CompileShader(GL_VERTEX_SHADER, vertSrc, NULL);
 	glCheckError();
@@ -921,6 +922,23 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 		// TODO: clean up?
 		return false;
 	}
+	*/
+
+	// We'll have to load all uniforms here. Or at least, get their locations.
+	// Here's gl3state.uniCommonData, replacing the above. None of these are mandatory for all 2D shaders.
+	shaderInfo->uniform[UNILOC_GAMMA] = glGetUniformLocation(prog, "gamma");
+	shaderInfo->uniform[UNILOC_INTENSITY] = glGetUniformLocation(prog, "intensity");
+	shaderInfo->uniform[UNILOC_INTENSITY_2D] = glGetUniformLocation(prog, "intensity2D");
+	shaderInfo->uniform[UNILOC_COLOR] = glGetUniformLocation(prog, "color");
+	// Should we load a default value for each?
+	/*
+	R_Printf(PRINT_ALL, "GAMMA = %d\n", shaderInfo->uniform[UNILOC_GAMMA]);
+	R_Printf(PRINT_ALL, "INTENSITY = %d\n", shaderInfo->uniform[UNILOC_INTENSITY]);
+	R_Printf(PRINT_ALL, "INTENSITY_2D = %d\n", shaderInfo->uniform[UNILOC_INTENSITY_2D]);
+	R_Printf(PRINT_ALL, "COLOR = %d\n", shaderInfo->uniform[UNILOC_COLOR]);
+	*/
+
+	/*
 	blockIndex = glGetUniformBlockIndex(prog, "uni2D");
 	if(blockIndex != GL_INVALID_INDEX)
 	{
@@ -940,6 +958,15 @@ initShader2D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 		goto err_cleanup;
 	}
 	*/
+
+	// Trans matrix does appear to be mandatory for 2D shaders.
+	shaderInfo->uniform[UNILOC_TRANS] = glGetUniformLocation(prog, "trans");
+	if (shaderInfo->uniform[UNILOC_TRANS] == -1)
+	{
+		R_Printf(PRINT_ALL, "WARNING: Couldn't find uniform location for 'trans'\n");
+		goto err_cleanup;
+	}
+	glUniformMatrix4fv( shaderInfo->uniform[UNILOC_TRANS], 1, GL_FALSE, (const GLfloat *)&gl3state.uni2DData.transMat4 );
 
 	shaderInfo->uniLmScalesOrTime = glGetUniformLocation(prog, "time");
 	if(shaderInfo->uniLmScalesOrTime != -1)
@@ -1124,9 +1151,8 @@ static void initUBOs(void)
 	gl3state.uniCommonData.intensity2D = gl3_intensity_2D->value;
 	gl3state.uniCommonData.color = HMM_Vec4(1, 1, 1, 1);
 
-	glGenBuffers(1, &gl3state.uniCommonUBO);
-	glCheckError();
 	/*
+	glGenBuffers(1, &gl3state.uniCommonUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniCommonUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNICOMMON, gl3state.uniCommonUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uniCommonData), &gl3state.uniCommonData, GL_DYNAMIC_DRAW);
@@ -1135,9 +1161,8 @@ static void initUBOs(void)
 	// the matrix will be set to something more useful later, before being used
 	gl3state.uni2DData.transMat4 = HMM_Mat4();
 
-	glGenBuffers(1, &gl3state.uni2DUBO);
-	glCheckError();
 	/*
+	glGenBuffers(1, &gl3state.uni2DUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni2DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI2D, gl3state.uni2DUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uni2DData), &gl3state.uni2DData, GL_DYNAMIC_DRAW);
@@ -1153,17 +1178,13 @@ static void initUBOs(void)
 	gl3state.uni3DData.overbrightbits = (gl3_overbrightbits->value <= 0.0f) ? 1.0f : gl3_overbrightbits->value;
 	gl3state.uni3DData.particleFadeFactor = gl3_particle_fade_factor->value;
 
-	glGenBuffers(1, &gl3state.uni3DUBO);
-	glCheckError();
 	/*
+	glGenBuffers(1, &gl3state.uni3DUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uni3DUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNI3D, gl3state.uni3DUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uni3DData), &gl3state.uni3DData, GL_DYNAMIC_DRAW);
-	*/
 
 	glGenBuffers(1, &gl3state.uniLightsUBO);
-	glCheckError();
-	/*
 	glBindBuffer(GL_UNIFORM_BUFFER, gl3state.uniLightsUBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, GL3_BINDINGPOINT_UNILIGHTS, gl3state.uniLightsUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(gl3state.uniLightsData), &gl3state.uniLightsData, GL_DYNAMIC_DRAW);
