@@ -387,7 +387,7 @@ static const char* vertexSrc3Dlm = MULTILINE_STRING(
 		varying vec2 passLMcoord;
 		varying vec3 passWorldCoord;
 		varying vec3 passNormal;
-		flat varying float passLightFlags;
+		varying float passLightFlags;
 
 		void main()
 		{
@@ -410,7 +410,7 @@ static const char* vertexSrc3DlmFlow = MULTILINE_STRING(
 		varying vec2 passLMcoord;
 		varying vec3 passWorldCoord;
 		varying vec3 passNormal;
-		flat varying float passLightFlags;
+		// varying float passLightFlags;
 
 		void main()
 		{
@@ -420,7 +420,7 @@ static const char* vertexSrc3DlmFlow = MULTILINE_STRING(
 			passWorldCoord = worldCoord.xyz;
 			vec4 worldNormal = transModel * vec4(normal, 0.0);
 			passNormal = normalize(worldNormal.xyz);
-			passLightFlags = lightFlags;
+			// passLightFlags = lightFlags;
 
 			gl_Position = transProjView * worldCoord;
 		}
@@ -470,6 +470,7 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
+		/*
 		struct DynLight { // gl3UniDynLight in C
 			vec3 lightOrigin;
 			float _pad;
@@ -483,6 +484,7 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 		uniform DynLight dynLights[32];
 		uniform int numDynLights;
 		// uint _pad1; uint _pad2; uint _pad3; // FFS, AMD!
+		*/
 
 		uniform sampler2D tex;
 
@@ -496,7 +498,7 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 		varying vec2 passLMcoord;
 		varying vec3 passWorldCoord;
 		varying vec3 passNormal;
-		flat varying float passLightFlags;	// dafuq hago con esto
+		// varying float passLightFlags;	// dafuq hago con esto
 
 		void main()
 		{
@@ -511,6 +513,7 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 			lmTex     += texture2D(lightmap2, passLMcoord) * lmScales[2];
 			lmTex     += texture2D(lightmap3, passLMcoord) * lmScales[3];
 
+			/*	// Proto: I don't want anything with dynamic lights for now
 			if(passLightFlags != 0.0)
 			{
 				// TODO: or is hardcoding 32 better?
@@ -542,6 +545,7 @@ static const char* fragmentSrc3Dlm = MULTILINE_STRING(
 					lmTex.rgb += dynLights[i].lightColor.rgb * fact * (1.0/256.0);
 				}
 			}
+			*/
 
 			lmTex.rgb *= overbrightbits;
 			gl_FragColor = lmTex*texel;
@@ -555,6 +559,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 
 		// it gets attributes and uniforms from fragmentCommon3D
 
+		/*
 		struct DynLight { // gl3UniDynLight in C
 			vec3 lightOrigin;
 			float _pad;
@@ -570,6 +575,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 			uint numDynLights;
 			uint _pad1; uint _pad2; uint _pad3; // FFS, AMD!
 		};
+		*/
 
 		uniform sampler2D tex;
 
@@ -580,10 +586,10 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 
 		uniform vec4 lmScales[4];
 
-		attribute vec2 passLMcoord;
-		attribute vec3 passWorldCoord;
-		attribute vec3 passNormal;
-		flat attribute uint passLightFlags;
+		varying vec2 passLMcoord;
+		varying vec3 passWorldCoord;
+		varying vec3 passNormal;
+		// varying float passLightFlags;
 
 		void main()
 		{
@@ -598,6 +604,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 			lmTex     += texture2D(lightmap2, passLMcoord) * lmScales[2];
 			lmTex     += texture2D(lightmap3, passLMcoord) * lmScales[3];
 
+			/*
 			if(passLightFlags != 0u)
 			{
 				// TODO: or is hardcoding 32 better?
@@ -629,6 +636,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 					lmTex.rgb += dynLights[i].lightColor.rgb * fact * (1.0/256.0);
 				}
 			}
+			*/
 
 			// turn lightcolor into grey for gl3_colorlight 0
 			lmTex.rgb = vec3(0.333 * (lmTex.r+lmTex.g+lmTex.b));
@@ -637,7 +645,7 @@ static const char* fragmentSrc3DlmNoColor = MULTILINE_STRING(
 			gl_FragColor = lmTex*texel;
 			gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(gamma)); // apply gamma correction to result
 
-			gl_FragColor.a = 1; // lightmaps aren't used with translucent surfaces
+			gl_FragColor.a = 1.0; // lightmaps aren't used with translucent surfaces
 		}
 );
 
@@ -1052,6 +1060,17 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 
 		goto err_cleanup;
 	}
+	*/
+
+	// We'll have to load all uniforms here. Or at least, get their locations.
+	// Here's gl3state.uniCommonData, replacing the above. None of these are mandatory for all 2D shaders.
+	shaderInfo->uniform[UNILOC_GAMMA] = glGetUniformLocation(prog, "gamma");
+	shaderInfo->uniform[UNILOC_INTENSITY] = glGetUniformLocation(prog, "intensity");
+	shaderInfo->uniform[UNILOC_INTENSITY_2D] = glGetUniformLocation(prog, "intensity2D");
+	shaderInfo->uniform[UNILOC_COLOR] = glGetUniformLocation(prog, "color");
+	// Should we load a default value for each?
+
+	/*
 	blockIndex = glGetUniformBlockIndex(prog, "uni3D");
 	if(blockIndex != GL_INVALID_INDEX)
 	{
@@ -1073,6 +1092,17 @@ initShader3D(gl3ShaderInfo_t* shaderInfo, const char* vertSrc, const char* fragS
 
 		goto err_cleanup;
 	}
+	*/
+
+	shaderInfo->uniform[UNILOC_TRANS_PROJ_VIEW] = glGetUniformLocation(prog, "transProjView");
+	shaderInfo->uniform[UNILOC_TRANS_MODEL] = glGetUniformLocation(prog, "transModel");
+	shaderInfo->uniform[UNILOC_SCROLL] = glGetUniformLocation(prog, "scroll");
+	shaderInfo->uniform[UNILOC_TIME] = glGetUniformLocation(prog, "time");
+	shaderInfo->uniform[UNILOC_ALPHA] = glGetUniformLocation(prog, "alpha");
+	shaderInfo->uniform[UNILOC_OVERBRIGHTBITS] = glGetUniformLocation(prog, "overbrightbits");
+	shaderInfo->uniform[UNILOC_PARTICLE_FADE_FACTOR] = glGetUniformLocation(prog, "particleFadeFactor");
+
+	/*
 	blockIndex = glGetUniformBlockIndex(prog, "uniLights");
 	if(blockIndex != GL_INVALID_INDEX)
 	{

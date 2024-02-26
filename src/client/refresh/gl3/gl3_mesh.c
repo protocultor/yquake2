@@ -133,6 +133,8 @@ DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* entity, vec3_t shadelight)
 	float* shadedots = r_avertexnormal_dots[((int)(entity->angles[1] *
 				(SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1)];
 
+	gl3ShaderInfo_t* shader;
+
 	frame = (daliasframe_t *)((byte *)paliashdr + paliashdr->ofs_frames
 							  + entity->frame * paliashdr->framesize);
 	verts = v = frame->verts;
@@ -155,11 +157,14 @@ DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* entity, vec3_t shadelight)
 	if (colorOnly)
 	{
 		GL3_UseProgram(gl3state.si3DaliasColor.shaderProgram);
+		shader = &gl3state.si3DaliasColor;
 	}
 	else
 	{
 		GL3_UseProgram(gl3state.si3Dalias.shaderProgram);
+		shader = &gl3state.si3Dalias;
 	}
+	glCheckError();
 
 	if(gl3_colorlight->value == 0.0f)
 	{
@@ -318,11 +323,46 @@ DrawAliasFrameLerp(dmdl_t *paliashdr, entity_t* entity, vec3_t shadelight)
 
 	GL3_BindVAO(gl3state.vaoAlias);
 	GL3_BindVBO(gl3state.vboAlias);
+	glCheckError();
+
+	// Proto: uniforms
+	glUniformMatrix4fv( shader->uniform[UNILOC_TRANS_PROJ_VIEW], 1, GL_FALSE,
+				(const GLfloat *)&gl3state.uni3DData.transProjViewMat4);
+	glUniformMatrix4fv( shader->uniform[UNILOC_TRANS_MODEL], 1, GL_FALSE,
+				(const GLfloat *)&gl3state.uni3DData.transModelMat4);
+	glCheckError();
+	glUniform1f( shader->uniform[UNILOC_OVERBRIGHTBITS], gl3state.uni3DData.overbrightbits );
+	glUniform1f( shader->uniform[UNILOC_ALPHA], gl3state.uni3DData.alpha );
+	glUniform1f( shader->uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
+	glUniform1f( shader->uniform[UNILOC_INTENSITY], gl3state.uniCommonData.intensity );
+	glCheckError();
+
+	// Proto: from GL3_SurfInit
+	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
+	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), 0);
+	glCheckError();
+
+	glEnableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), 3*sizeof(GLfloat));
+	glCheckError();
+
+	glEnableVertexAttribArray(GL3_ATTRIB_COLOR);
+	qglVertexAttribPointer(GL3_ATTRIB_COLOR, 4, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), 5*sizeof(GLfloat));
+	glCheckError();
 
 	glBufferData(GL_ARRAY_BUFFER, da_count(vtxBuf)*sizeof(gl3_alias_vtx_t), vtxBuf.p, GL_STREAM_DRAW);
+	glCheckError();
 	GL3_BindEBO(gl3state.eboAlias);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, da_count(idxBuf)*sizeof(GLushort), idxBuf.p, GL_STREAM_DRAW);
+	glCheckError();
 	glDrawElements(GL_TRIANGLES, da_count(idxBuf), GL_UNSIGNED_SHORT, NULL);
+	glCheckError();
+
+	// Proto: normal shutdown
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
+	glDisableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+	glDisableVertexAttribArray(GL3_ATTRIB_COLOR);
+	glCheckError();
 }
 
 static void
@@ -890,6 +930,7 @@ GL3_DrawAliasModel(entity_t *entity)
 	{
 		glEnable(GL_BLEND);
 	}
+	glCheckError();
 
 
 	if ((entity->frame >= paliashdr->num_frames) ||
@@ -915,6 +956,7 @@ GL3_DrawAliasModel(entity_t *entity)
 	//glPopMatrix();
 	gl3state.uni3DData.transModelMat4 = origModelMat;
 	GL3_UpdateUBO3D();
+	glCheckError();
 
 	if (entity->flags & RF_WEAPONMODEL)
 	{
@@ -971,6 +1013,7 @@ void GL3_DrawAliasShadows(void)
 		glStencilFunc(GL_EQUAL, 1, 2);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 	}
+	glCheckError();
 
 	for(size_t i=0; i<numShadowModels; ++i)
 	{
@@ -987,6 +1030,7 @@ void GL3_DrawAliasShadows(void)
 
 		DrawAliasShadow(si);
 	}
+	glCheckError();
 
 	if (gl3config.stencil)
 	{
@@ -998,5 +1042,6 @@ void GL3_DrawAliasShadows(void)
 	//glPopMatrix();
 	gl3state.uni3DData.transModelMat4 = oldMat;
 	GL3_UpdateUBO3D();
+	glCheckError();
 }
 

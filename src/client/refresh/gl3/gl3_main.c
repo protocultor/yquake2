@@ -25,6 +25,7 @@
  * =======================================================================
  */
 
+#include <stddef.h> // ofsetof()
 
 #include "../ref_shared.h"
 #include "header/local.h"
@@ -673,11 +674,79 @@ GL3_Shutdown(void)
 }
 
 // assumes gl3state.v[ab]o3D are bound
+// Proto: let's no longer assume shit... we should bind vbo3D here also
 // buffers and draws gl3_3D_vtx_t vertices
 // drawMode is something like GL_TRIANGLE_STRIP or GL_TRIANGLE_FAN or whatever
 void
 GL3_BufferAndDraw3D(const gl3_3D_vtx_t* verts, int numVerts, GLenum drawMode)
 {
+	static qboolean locShown = false, selShader = false;
+	gl3ShaderInfo_t* shader;
+	// Proto: gotta change this way of selecting shader!
+	if (gl3state.currentShaderProgram == gl3state.si3Dlm.shaderProgram)
+	{
+		shader = &gl3state.si3Dlm;
+		// selShader = true;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si3DlmFlow.shaderProgram)
+	{
+		shader = &gl3state.si3DlmFlow;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si3Dsky.shaderProgram)
+	{
+		shader = &gl3state.si3Dsky;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si3Dturb.shaderProgram)
+	{
+		shader = &gl3state.si3Dturb;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si3Dtrans.shaderProgram)
+	{
+		shader = &gl3state.si3Dtrans;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si3DtransFlow.shaderProgram)
+	{
+		shader = &gl3state.si3DtransFlow;
+	}
+
+	if (selShader && !locShown)
+	{
+		for (short unsigned int i = 0; i < UNILOC_MAX_UNIFORMS; i++)
+		{
+			R_Printf(PRINT_ALL, "uniloc %d = %d\n", i, shader->uniform[i]);
+		}
+		locShown = true;
+	}
+
+	// Proto: this is a bad idea, but I need to have all the shaders' uniforms in one place
+	glUniformMatrix4fv( shader->uniform[UNILOC_TRANS_PROJ_VIEW], 1, GL_FALSE,
+			(const GLfloat *)&gl3state.uni3DData.transProjViewMat4);
+	glCheckError();
+	glUniformMatrix4fv( shader->uniform[UNILOC_TRANS_MODEL], 1, GL_FALSE,
+			(const GLfloat *)&gl3state.uni3DData.transModelMat4);
+	glCheckError();
+	glUniform1f( shader->uniform[UNILOC_OVERBRIGHTBITS], gl3state.uni3DData.overbrightbits );
+	glCheckError();
+	glUniform1f( shader->uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
+	glUniform1f( shader->uniform[UNILOC_INTENSITY], gl3state.uniCommonData.intensity );
+	glCheckError();
+
+	// Proto: start copy from GL3_SurfInit (where vao3D is initialized)
+	glCheckError();
+	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
+	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, sizeof(gl3_3D_vtx_t), 0);
+
+	glEnableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, texCoord));
+
+	glEnableVertexAttribArray(GL3_ATTRIB_LMTEXCOORD);
+	qglVertexAttribPointer(GL3_ATTRIB_LMTEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, lmTexCoord));
+
+	glEnableVertexAttribArray(GL3_ATTRIB_NORMAL);
+	qglVertexAttribPointer(GL3_ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, sizeof(gl3_3D_vtx_t), offsetof(gl3_3D_vtx_t, normal));
+	glCheckError();
+	// end copy
+
 	if(!gl3config.useBigVBO)
 	{
 		glBufferData( GL_ARRAY_BUFFER, sizeof(gl3_3D_vtx_t)*numVerts, verts, GL_STREAM_DRAW );
@@ -744,6 +813,14 @@ GL3_BufferAndDraw3D(const gl3_3D_vtx_t* verts, int numVerts, GLenum drawMode)
 		gl3state.vbo3DcurOffset = curOffset + neededSize; // TODO: padding or sth needed?
 #endif
 	}
+	glCheckError();
+
+	// Proto: Needed for my copy above
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
+	glDisableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+	glDisableVertexAttribArray(GL3_ATTRIB_LMTEXCOORD);
+	glDisableVertexAttribArray(GL3_ATTRIB_NORMAL);
+	glCheckError();
 }
 
 static void

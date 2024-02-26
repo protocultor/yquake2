@@ -49,6 +49,9 @@ GL3_Draw_InitLocal(void)
 
 	glGenBuffers(1, &vbo2D);
 	glCheckError();
+
+	// Proto: do we even need the following? There are no VAOs anymore.
+	/*
 	GL3_BindVBO(vbo2D);
 	glCheckError();
 
@@ -65,6 +68,9 @@ GL3_Draw_InitLocal(void)
 	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 2*sizeof(float));
 	glCheckError();
 
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
+	glDisableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
+
 	// set up attribute layout for 2D flat color rendering
 
 	// glGenVertexArrays(1, &vao2Dcolor);
@@ -80,8 +86,11 @@ GL3_Draw_InitLocal(void)
 	qglVertexAttribPointer(GL3_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 2*sizeof(float), 0);
 	glCheckError();
 
+	glDisableVertexAttribArray(GL3_ATTRIB_POSITION);
+
 	GL3_BindVAO(0);
 	glCheckError();
+	*/
 }
 
 void
@@ -119,6 +128,8 @@ drawTexturedRectangle(float x, float y, float w, float h,
 		x+w, y,   sh, tl
 	};
 
+	gl3ShaderInfo_t* shader;
+
 	GL3_BindVAO(vao2D);
 	glCheckError();
 
@@ -129,17 +140,25 @@ drawTexturedRectangle(float x, float y, float w, float h,
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vBuf), vBuf, GL_STREAM_DRAW);
 	glCheckError();
 
-
-	// Proto: from init, have to force the correct shader
-	GL3_UseProgram(gl3state.si2D.shaderProgram);
-	glCheckError();
-
+	// Proto: from init, have to force the correct shader... please improve this
+	if (gl3state.currentShaderProgram == gl3state.si2D.shaderProgram)
+	{
+		shader = &gl3state.si2D;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si2DpostProcess.shaderProgram)
+	{
+		shader = &gl3state.si2DpostProcess;
+	}
+	else if (gl3state.currentShaderProgram == gl3state.si2DpostProcessWater.shaderProgram)
+	{
+		shader = &gl3state.si2DpostProcessWater;
+	}
 	// copied from shaders... this shouldn't be here... maybe?
-	glUniformMatrix4fv( gl3state.si2D.uniform[UNILOC_TRANS], 1, GL_FALSE,
+	glUniformMatrix4fv( shader->uniform[UNILOC_TRANS], 1, GL_FALSE,
 				(const GLfloat *)&gl3state.uni2DData.transMat4);
 	// See GL3_BeginFrame... should all of these continue to be in gl3state?
-	glUniform1f( gl3state.si2D.uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
-	glUniform1f( gl3state.si2D.uniform[UNILOC_INTENSITY_2D], gl3state.uniCommonData.intensity2D );
+	glUniform1f( shader->uniform[UNILOC_GAMMA], gl3state.uniCommonData.gamma );
+	glUniform1f( shader->uniform[UNILOC_INTENSITY_2D], gl3state.uniCommonData.intensity2D );
 	glCheckError();
 
 	glEnableVertexAttribArray(GL3_ATTRIB_POSITION);
