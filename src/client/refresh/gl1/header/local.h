@@ -39,24 +39,6 @@
  #define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
 #endif
 
-#ifndef GL_EXT_texture_filter_anisotropic
- #define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
- #define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT 0x84FF
-#endif
-
-#ifndef GL_VERSION_1_3
- #define GL_TEXTURE0 0x84C0
- #define GL_TEXTURE1 0x84C1
-#endif
-
-#ifndef GL_MULTISAMPLE
-#define GL_MULTISAMPLE 0x809D
-#endif
-
-#ifndef GL_MULTISAMPLE_FILTER_HINT_NV
-#define GL_MULTISAMPLE_FILTER_HINT_NV 0x8534
-#endif
-
 #define TEXNUM_LIGHTMAPS 1024
 #define TEXNUM_SCRAPS 1152
 #define TEXNUM_IMAGES 1153
@@ -304,11 +286,13 @@ void R_TextureSolidMode(char *string);
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
 #ifdef DEBUG
-void glCheckError_(const char *file, const char *function, int line);
+void glCheckError_(const char *file, const char *function, unsigned int line);
 // Ideally, the following list should contain all OpenGL calls.
 // Either way, errors are caught, since error flags are persisted until the next glGetError() call.
 // So they show, even if the location of the error is inaccurate.
 #define glDrawArrays(...) glDrawArrays(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
+#define glDrawElements(...) glDrawElements(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
+#define glDrawRangeElements(...) glDrawRangeElements(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexImage2D(...) glTexImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexSubImage2D(...) glTexSubImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexEnvf(...) glTexEnvf(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)

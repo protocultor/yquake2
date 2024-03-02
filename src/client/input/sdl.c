@@ -723,17 +723,11 @@ IN_Update(void)
 			case SDL_CONTROLLERBUTTONUP:
 			case SDL_CONTROLLERBUTTONDOWN:
 			{
-				qboolean down = (event.type == SDL_CONTROLLERBUTTONDOWN);
-				unsigned char btn = event.cbutton.button;
+				const unsigned char btn = event.cbutton.button;
 
 				// Handle Back Button first, to override its original key
-				if (btn == sdl_back_button)
-				{
-					Key_Event(K_JOY_BACK, down, true);
-					break;
-				}
-
-				Key_Event(K_BTN_A + btn, down, true);
+				Key_Event( (btn == sdl_back_button)? K_JOY_BACK : K_JOY_FIRST_REGULAR + btn,
+					event.type == SDL_CONTROLLERBUTTONDOWN, true );
 				break;
 			}
 

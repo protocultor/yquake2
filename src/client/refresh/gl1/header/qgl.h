@@ -44,11 +44,36 @@
 #define APIENTRY
 #endif
 
+#ifndef GL_EXT_shared_texture_palette
 #define GL_SHARED_TEXTURE_PALETTE_EXT 0x81FB
+#endif
 
+#ifndef GL_EXT_point_parameters
 #define GL_POINT_SIZE_MIN_EXT 0x8126
 #define GL_POINT_SIZE_MAX_EXT 0x8127
 #define GL_DISTANCE_ATTENUATION_EXT 0x8129
+#endif
+
+#ifndef GL_EXT_texture_filter_anisotropic
+#define GL_TEXTURE_MAX_ANISOTROPY_EXT	0x84FE
+#define GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT	0x84FF
+#endif
+
+#ifndef GL_NV_multisample_filter_hint
+#define GL_MULTISAMPLE_FILTER_HINT_NV	0x8534
+#endif
+
+#ifndef GL_ARB_imaging
+#define GL_TABLE_TOO_LARGE	0x8031
+#endif
+
+#ifndef GL_VERSION_1_3
+#define GL_TEXTURE0	0x84C0
+#define GL_TEXTURE1	0x84C1
+#define GL_TEXTURE2	0x84C2
+#define GL_TEXTURE3	0x84C3
+#define GL_MULTISAMPLE	0x809D
+#endif
 
 #ifndef GL_EXT_texture_env_combine
 #define GL_COMBINE_EXT 0x8570

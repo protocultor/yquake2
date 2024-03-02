@@ -1622,17 +1622,11 @@ RI_BeginFrame(float camera_separation)
 	{
 		int obb_val = (int)gl1_overbrightbits->value;
 
-		if (obb_val < 0)
-		{
-			obb_val = 0;
-		}
-		else if (obb_val == 3)
+		// Force valid values only
+		obb_val = Q_min( Q_max(obb_val, 0), 4);
+		if (obb_val == 3)
 		{
 			obb_val = 2;
-		}
-		else if (obb_val > 4)
-		{
-			obb_val = 4;
 		}
 
 		ri.Cvar_SetValue("gl1_overbrightbits", obb_val);
@@ -1995,7 +1989,7 @@ Com_Printf(const char *msg, ...)
 
 #ifdef DEBUG
 void
-glCheckError_(const char *file, const char *function, int line)
+glCheckError_(const char *file, const char *function, unsigned int line)
 {
 	GLenum errorCode;
 	const char * msg;
@@ -2006,12 +2000,13 @@ glCheckError_(const char *file, const char *function, int line)
 	{
 		switch(errorCode)
 		{
-			MY_ERROR_CASE(GL_INVALID_ENUM);
-			MY_ERROR_CASE(GL_INVALID_VALUE);
-			MY_ERROR_CASE(GL_INVALID_OPERATION);
-			MY_ERROR_CASE(GL_STACK_OVERFLOW);
-			MY_ERROR_CASE(GL_STACK_UNDERFLOW);
-			MY_ERROR_CASE(GL_OUT_OF_MEMORY);
+			MY_ERROR_CASE(GL_INVALID_ENUM)
+			MY_ERROR_CASE(GL_INVALID_VALUE)
+			MY_ERROR_CASE(GL_INVALID_OPERATION)
+			MY_ERROR_CASE(GL_STACK_OVERFLOW)
+			MY_ERROR_CASE(GL_STACK_UNDERFLOW)
+			MY_ERROR_CASE(GL_OUT_OF_MEMORY)
+			MY_ERROR_CASE(GL_TABLE_TOO_LARGE)
 			default: msg = "UNKNOWN";
 		}
 		R_Printf(PRINT_ALL, "glError: %s in %s (%s, %d)\n", msg, function, file, line);
