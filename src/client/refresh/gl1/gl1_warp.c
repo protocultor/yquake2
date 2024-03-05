@@ -296,6 +296,33 @@ R_EmitWaterPolys(msurface_t *fa)
 		scroll = 0;
 	}
 
+	for (bp = fa->polys; bp; bp = bp->next)
+	{
+		p = bp;
+
+		for (i=0; i < p->numverts-2; i++) {
+			indexArray[rb_index++] = rb_vertex;
+			indexArray[rb_index++] = rb_vertex+i+1;
+			indexArray[rb_index++] = rb_vertex+i+2;
+		}
+
+		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
+		{
+			VA_SetElem3v(vertexArray[rb_vertex], v);
+
+			os = v [ 3 ];
+			ot = v [ 4 ];
+
+			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
+			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
+
+			VA_SetElem2(texCoordArray[0][rb_vertex], s * ( 1.0 / 64 ), t * ( 1.0 / 64 ));
+
+			rb_vertex++;
+		}
+	}
+
+	/*
 	// workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
 #ifdef _MSC_VER
 	int maxNumVerts = 0;
@@ -343,6 +370,7 @@ R_EmitWaterPolys(msurface_t *fa)
 	}
 
 	YQ2_VLAFREE( tex );
+	*/
 }
 
 void

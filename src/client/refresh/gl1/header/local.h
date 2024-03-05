@@ -145,6 +145,29 @@ extern int r_viewcluster, r_viewcluster2, r_oldviewcluster, r_oldviewcluster2;
 
 extern qboolean IsHighDPIaware;
 
+
+// new backend
+#define MAX_TEXTURE_UNITS	2
+#define MAX_VERTICES	16384
+#define MAX_INDICES		MAX_VERTICES * 4
+
+#define VA_SetElem2(v,a,b)		((v)[0]=(a),(v)[1]=(b))
+#define VA_SetElem3(v,a,b,c)	((v)[0]=(a),(v)[1]=(b),(v)[2]=(c))
+#define VA_SetElem4(v,a,b,c,d)	((v)[0]=(a),(v)[1]=(b),(v)[2]=(c),(v)[3]=(d))
+
+#define VA_SetElem2v(v,a)	((v)[0]=(a)[0],(v)[1]=(a)[1])
+#define VA_SetElem3v(v,a)	((v)[0]=(a)[0],(v)[1]=(a)[1],(v)[2]=(a)[2])
+#define VA_SetElem4v(v,a)	((v)[0]=(a)[0],(v)[1]=(a)[1],(v)[2]=(a)[2],(v)[3]=(a)[3])
+
+extern float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
+extern float	vertexArray[MAX_VERTICES][3];
+extern float	colorArray[MAX_VERTICES][4];
+extern unsigned short int	indexArray[MAX_INDICES];
+extern unsigned short int	rb_vertex, rb_index;
+
+
+// cvars
+
 extern cvar_t *r_norefresh;
 extern cvar_t *gl_lefthand;
 extern cvar_t *r_gunfov;
