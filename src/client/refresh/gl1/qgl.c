@@ -43,6 +43,14 @@ void (APIENTRY *qglPointParameterfvARB)(GLenum param, const GLfloat *value);
 void (APIENTRY *qglColorTableEXT)(GLenum, GLenum, GLsizei, GLenum, GLenum,
 		const GLvoid *);
 
+void ( APIENTRY *qglBindBuffer ) ( GLenum target, GLuint buffer );
+void ( APIENTRY *qglDeleteBuffers ) ( GLsizei n, const GLuint *buffers );
+void ( APIENTRY *qglGenBuffers ) ( GLsizei n, GLuint *buffers );
+void ( APIENTRY *qglBufferData ) ( GLenum target, GLsizeiptr size,
+		const void *data, GLenum usage );
+void ( APIENTRY *qglBufferSubData ) ( GLenum target, GLintptr offset,
+		GLsizeiptr size, const void *data );
+
 /* ========================================================================= */
 
 void QGL_EXT_Reset ( void )
@@ -50,6 +58,11 @@ void QGL_EXT_Reset ( void )
 	qglPointParameterfARB     = NULL;
 	qglPointParameterfvARB    = NULL;
 	qglColorTableEXT          = NULL;
+	qglBindBuffer			= NULL;
+	qglDeleteBuffers		= NULL;
+	qglGenBuffers			= NULL;
+	qglBufferData			= NULL;
+	qglBufferSubData		= NULL;
 }
 
 /* ========================================================================= */

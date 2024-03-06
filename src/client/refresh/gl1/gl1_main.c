@@ -1562,6 +1562,26 @@ RI_Init(void)
 
 	// ----
 
+	// Error check this!
+	qglBindBuffer = (void (APIENTRY *)(GLenum, GLuint))RI_GetProcAddress ( "glBindBuffer" );
+	qglDeleteBuffers = (void (APIENTRY *)(GLsizei, const GLuint *))RI_GetProcAddress ( "glDeleteBuffers" );
+	qglGenBuffers = (void (APIENTRY *)(GLsizei, GLuint *))RI_GetProcAddress ( "glGenBuffers" );
+	qglBufferData = (void (APIENTRY *)(GLenum, GLsizeiptr, const void *, GLenum))RI_GetProcAddress ( "glBufferData" );
+	qglBufferSubData = (void (APIENTRY *)(GLenum, GLintptr, GLsizeiptr, const void *))RI_GetProcAddress ( "glBufferSubData" );
+
+	// ----
+
+	qglGenBuffers ( 2, vbo_ids );
+	qglBindBuffer ( GL_ARRAY_BUFFER, vbo_ids[0] );
+	qglBufferData ( GL_ARRAY_BUFFER, sizeof( glvert_t ) * MAX_VERTICES,
+					vertexArray, GL_STREAM_DRAW );
+	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, vbo_ids[1] );
+	qglBufferData ( GL_ELEMENT_ARRAY_BUFFER, sizeof ( GLushort ) * MAX_INDICES,
+					indexArray, GL_STREAM_DRAW );
+
+	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, 0 );
+	qglBindBuffer ( GL_ARRAY_BUFFER, 0 );
+
 	R_SetDefaultState();
 
 	R_InitImages();
@@ -1579,6 +1599,8 @@ RI_Shutdown(void)
 	ri.Cmd_RemoveCommand("screenshot");
 	ri.Cmd_RemoveCommand("imagelist");
 	ri.Cmd_RemoveCommand("gl_strings");
+
+	qglDeleteBuffers ( 2, vbo_ids );
 
 	Mod_FreeAll();
 

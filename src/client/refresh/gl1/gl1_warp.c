@@ -308,7 +308,7 @@ R_EmitWaterPolys(msurface_t *fa)
 
 		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
 		{
-			VA_SetElem3v(vertexArray[rb_vertex], v);
+			VA_SetElem3v(vertexArray[rb_vertex].vcoord, v);
 
 			os = v [ 3 ];
 			ot = v [ 4 ];
@@ -316,7 +316,7 @@ R_EmitWaterPolys(msurface_t *fa)
 			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
 			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
 
-			VA_SetElem2(texCoordArray[0][rb_vertex], s * ( 1.0 / 64 ), t * ( 1.0 / 64 ));
+			VA_SetElem2(vertexArray[rb_vertex].texcoord, s * ( 1.0 / 64 ), t * ( 1.0 / 64 ));
 
 			rb_vertex++;
 		}

@@ -37,11 +37,13 @@ gllightmapstate_t gl_lms;
 
 // new backend
 
-float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
-float	vertexArray[MAX_VERTICES][3];
-float	colorArray[MAX_VERTICES][4];
-unsigned short int	indexArray[MAX_INDICES];
-unsigned short int	rb_vertex, rb_index;
+glvert_t	vertexArray[MAX_VERTICES];
+// float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
+// float	vertexArray[MAX_VERTICES][3];
+// float	colorArray[MAX_VERTICES][4];
+GLushort	indexArray[MAX_INDICES];
+GLushort	rb_vertex, rb_index;
+GLuint		vbo_ids[2];
 
 
 void LM_InitBlock(void);
@@ -57,16 +59,29 @@ R_RenderArray(void)
 	if (rb_vertex == 0 || rb_index == 0)	// nothing to render
 		return;
 
+	qglBindBuffer ( GL_ARRAY_BUFFER, vbo_ids[0] );
+	qglBufferSubData ( GL_ARRAY_BUFFER, 0, sizeof( glvert_t ) * rb_vertex, vertexArray );
+
+	glVertexPointer (3, GL_FLOAT, sizeof(glvert_t), NULL);
+	glTexCoordPointer (2, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)( sizeof(GLfloat) * 3 )  );	// skip glvert_t.vcoord
+
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer (3, GL_FLOAT, sizeof(vertexArray[0]), vertexArray[0]);
-	glTexCoordPointer (2, GL_FLOAT, sizeof(texCoordArray[0][0]), texCoordArray[0][0]);
+	// glVertexPointer (3, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)vertexArray[0].vcoord);
+	// glTexCoordPointer (2, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)vertexArray[0].texcoord);
 
-	glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, indexArray);
+	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, vbo_ids[1] );
+	qglBufferSubData ( GL_ELEMENT_ARRAY_BUFFER, 0, sizeof( GLushort ) * rb_index, indexArray );
+
+	// glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, indexArray);
+	glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, NULL);
 
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	glDisableClientState( GL_VERTEX_ARRAY );
+
+	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, 0 );
+	qglBindBuffer ( GL_ARRAY_BUFFER, 0 );
 
 	rb_vertex = rb_index = 0;
 }
@@ -89,8 +104,8 @@ R_DrawGLPoly(glpoly_t *p)
 
 	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
 	{
-		VA_SetElem3v(vertexArray[rb_vertex], v);
-		VA_SetElem2v(texCoordArray[0][rb_vertex], v + 3);
+		VA_SetElem3v(vertexArray[rb_vertex].vcoord, v);
+		VA_SetElem2v(vertexArray[rb_vertex].texcoord, v + 3);
 		// VA_SetElem2(texCoordArray[0][rb_vertex], v->texture_st[0]+scroll, v->texture_st[1]);
 		// VA_SetElem3v(vertexArray[rb_vertex], v->xyz);
 		rb_vertex++;
@@ -135,8 +150,8 @@ R_DrawGLFlowingPoly(msurface_t *fa)
 
 	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
 	{
-		VA_SetElem3v(vertexArray[rb_vertex], v);
-		VA_SetElem2(texCoordArray[0][rb_vertex], v[ 3 ] + scroll, v [ 4 ]);
+		VA_SetElem3v(vertexArray[rb_vertex].vcoord, v);
+		VA_SetElem2(vertexArray[rb_vertex].texcoord, v[ 3 ] + scroll, v [ 4 ]);
 		// VA_SetElem2(texCoordArray[0][rb_vertex], v->texture_st[0]+scroll, v->texture_st[1]);
 		rb_vertex++;
 	}

@@ -115,12 +115,14 @@ void R_SetDefaultState(void);
 
 extern float gldepthmin, gldepthmax;
 
+/*
 typedef struct
 {
 	float x, y, z;
 	float s, t;
 	float r, g, b;
 } glvert_t;
+*/
 
 extern image_t gltextures[MAX_GLTEXTURES];
 extern int numgltextures;
@@ -159,12 +161,20 @@ extern qboolean IsHighDPIaware;
 #define VA_SetElem3v(v,a)	((v)[0]=(a)[0],(v)[1]=(a)[1],(v)[2]=(a)[2])
 #define VA_SetElem4v(v,a)	((v)[0]=(a)[0],(v)[1]=(a)[1],(v)[2]=(a)[2],(v)[3]=(a)[3])
 
-extern float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
-extern float	vertexArray[MAX_VERTICES][3];
-extern float	colorArray[MAX_VERTICES][4];
-extern unsigned short int	indexArray[MAX_INDICES];
-extern unsigned short int	rb_vertex, rb_index;
+typedef struct
+{
+	GLfloat vcoord[3];
+	GLfloat texcoord[2];
+	// float color[4];
+} glvert_t;
 
+extern glvert_t	vertexArray[MAX_VERTICES];
+// extern float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
+// extern float	vertexArray[MAX_VERTICES][3];
+// extern float	colorArray[MAX_VERTICES][4];
+extern GLushort	indexArray[MAX_INDICES];
+extern GLushort	rb_vertex, rb_index;
+extern GLuint	vbo_ids[2];
 
 // cvars
 
