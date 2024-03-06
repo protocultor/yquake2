@@ -58,11 +58,11 @@ void QGL_EXT_Reset ( void )
 	qglPointParameterfARB     = NULL;
 	qglPointParameterfvARB    = NULL;
 	qglColorTableEXT          = NULL;
-	qglBindBuffer			= NULL;
-	qglDeleteBuffers		= NULL;
-	qglGenBuffers			= NULL;
-	qglBufferData			= NULL;
-	qglBufferSubData		= NULL;
+	qglBindBuffer		= NULL;
+	qglDeleteBuffers	= NULL;
+	qglGenBuffers		= NULL;
+	qglBufferData		= NULL;
+	qglBufferSubData	= NULL;
 }
 
 /* ========================================================================= */

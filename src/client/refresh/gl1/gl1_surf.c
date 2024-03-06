@@ -54,6 +54,20 @@ void R_SetCacheState(msurface_t *surf);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
 static void
+R_BeginRenderArray(void)
+{
+	qglBindBuffer ( GL_ARRAY_BUFFER, vbo_ids[0] );
+
+	glVertexPointer (3, GL_FLOAT, sizeof(glvert_t), NULL);
+	glTexCoordPointer (2, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)( sizeof(GLfloat) * 3 )  );	// skip glvert_t.vcoord
+
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+	// rb_vertex = rb_index = 0;
+}
+
+static void
 R_RenderArray(void)
 {
 	if (rb_vertex == 0 || rb_index == 0)	// nothing to render
@@ -62,11 +76,15 @@ R_RenderArray(void)
 	qglBindBuffer ( GL_ARRAY_BUFFER, vbo_ids[0] );
 	qglBufferSubData ( GL_ARRAY_BUFFER, 0, sizeof( glvert_t ) * rb_vertex, vertexArray );
 
+	/*
+	// included in Begin
+
 	glVertexPointer (3, GL_FLOAT, sizeof(glvert_t), NULL);
 	glTexCoordPointer (2, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)( sizeof(GLfloat) * 3 )  );	// skip glvert_t.vcoord
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+	*/
 
 	// glVertexPointer (3, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)vertexArray[0].vcoord);
 	// glTexCoordPointer (2, GL_FLOAT, sizeof(glvert_t), (const GLvoid *)vertexArray[0].texcoord);
@@ -77,15 +95,28 @@ R_RenderArray(void)
 	// glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, indexArray);
 	glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, NULL);
 
+	/*
+	// included in End
+
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	glDisableClientState( GL_VERTEX_ARRAY );
 
 	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, 0 );
 	qglBindBuffer ( GL_ARRAY_BUFFER, 0 );
+	*/
 
 	rb_vertex = rb_index = 0;
 }
 
+static void
+R_EndRenderArray(void)
+{
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	glDisableClientState( GL_VERTEX_ARRAY );
+
+	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, 0 );
+	qglBindBuffer ( GL_ARRAY_BUFFER, 0 );
+}
 
 static void
 R_DrawGLPoly(glpoly_t *p)
@@ -646,6 +677,8 @@ R_DrawAlphaSurfaces(void)
 	glEnable(GL_BLEND);
 	R_TexEnv(GL_MODULATE);
 
+	R_BeginRenderArray();
+
 	/* the textures are prescaled up for a better
 	   lighting range, so scale it back down */
 	intens = gl_state.inverse_intensity;
@@ -696,6 +729,7 @@ R_DrawAlphaSurfaces(void)
 	}
 	// Flush the last batched array
 	R_RenderArray();
+	R_EndRenderArray();
 
 	R_TexEnv(GL_REPLACE);
 	glColor4f(1, 1, 1, 1);
@@ -712,6 +746,7 @@ R_DrawTextureChains(entity_t *currententity)
 	image_t *image;
 
 	c_visible_textures = 0;
+	R_BeginRenderArray();
 
 	for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 	{
@@ -736,8 +771,10 @@ R_DrawTextureChains(entity_t *currententity)
 
 		image->texturechain = NULL;
 	}
+
 	// Flush the last batched array
 	R_RenderArray();
+	R_EndRenderArray();
 
 	R_TexEnv(GL_REPLACE);
 }
@@ -764,6 +801,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 		}
 	}
 
+	R_BeginRenderArray();
 	psurf = &currentmodel->surfaces[currentmodel->firstmodelsurface];
 
 	if (currententity->flags & RF_TRANSLUCENT)
@@ -798,6 +836,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 		}
 	}
 	R_RenderArray();
+	R_EndRenderArray();
 
 	if (!(currententity->flags & RF_TRANSLUCENT))
 	{

@@ -1574,10 +1574,10 @@ RI_Init(void)
 	qglGenBuffers ( 2, vbo_ids );
 	qglBindBuffer ( GL_ARRAY_BUFFER, vbo_ids[0] );
 	qglBufferData ( GL_ARRAY_BUFFER, sizeof( glvert_t ) * MAX_VERTICES,
-					vertexArray, GL_STREAM_DRAW );
+					vertexArray, GL_DYNAMIC_DRAW );
 	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, vbo_ids[1] );
 	qglBufferData ( GL_ELEMENT_ARRAY_BUFFER, sizeof ( GLushort ) * MAX_INDICES,
-					indexArray, GL_STREAM_DRAW );
+					indexArray, GL_DYNAMIC_DRAW );
 
 	qglBindBuffer ( GL_ELEMENT_ARRAY_BUFFER, 0 );
 	qglBindBuffer ( GL_ARRAY_BUFFER, 0 );
