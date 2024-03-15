@@ -138,4 +138,7 @@ extern void ( APIENTRY *qglPointParameterfvARB ) ( GLenum param,
 extern void ( APIENTRY *qglColorTableEXT ) ( GLenum, GLenum, GLsizei, GLenum,
 		GLenum, const GLvoid * );
 
+extern void ( APIENTRY *qglMultiDrawArrays ) ( GLenum mode, const GLint *first,
+		const GLsizei *count, GLsizei drawcount );
+
 #endif

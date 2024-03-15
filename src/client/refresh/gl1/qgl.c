@@ -43,6 +43,9 @@ void (APIENTRY *qglPointParameterfvARB)(GLenum param, const GLfloat *value);
 void (APIENTRY *qglColorTableEXT)(GLenum, GLenum, GLsizei, GLenum, GLenum,
 		const GLvoid *);
 
+void (APIENTRY *qglMultiDrawArrays) ( GLenum mode, const GLint *first,
+		const GLsizei *count, GLsizei drawcount );
+
 /* ========================================================================= */
 
 void QGL_EXT_Reset ( void )
@@ -50,6 +53,7 @@ void QGL_EXT_Reset ( void )
 	qglPointParameterfARB     = NULL;
 	qglPointParameterfvARB    = NULL;
 	qglColorTableEXT          = NULL;
+	qglMultiDrawArrays        = NULL;
 }
 
 /* ========================================================================= */

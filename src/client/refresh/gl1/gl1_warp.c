@@ -282,7 +282,7 @@ R_EmitWaterPolys(msurface_t *fa)
 {
 	glpoly_t *p, *bp;
 	float *v;
-	int i;
+	int i, nv, j, k;
 	float s, t, os, ot;
 	float scroll;
 	float rdt = r_newrefdef.time;
@@ -299,7 +299,9 @@ R_EmitWaterPolys(msurface_t *fa)
 	for (bp = fa->polys; bp; bp = bp->next)
 	{
 		p = bp;
+		nv = p->numverts;
 
+		/*
 		for (i=0; i < p->numverts-2; i++) {
 			indexArray[rb_index++] = rb_vertex;
 			indexArray[rb_index++] = rb_vertex+i+1;
@@ -320,6 +322,32 @@ R_EmitWaterPolys(msurface_t *fa)
 
 			rb_vertex++;
 		}
+		*/
+
+		// new fan
+		j = rb_vertex * 3;	// vertex index
+		k = rb_vertex * 2;	// texcoord index
+		fans_starts[rb_fan] = rb_vertex;
+		fans_sizes[rb_fan] = nv;
+
+		for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
+		{
+			vertexArray[j++] = v[ 0 ];
+			vertexArray[j++] = v[ 1 ];
+			vertexArray[j++] = v[ 2 ];
+
+			os = v [ 3 ];
+			ot = v [ 4 ];
+
+			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
+			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
+
+			texCoordArray[k++] = s * ( 1.0 / 64 );
+			texCoordArray[k++] = t * ( 1.0 / 64 );
+		}
+
+		rb_vertex += nv;
+		rb_fan++;
 	}
 
 	/*

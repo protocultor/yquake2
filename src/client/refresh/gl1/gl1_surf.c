@@ -37,11 +37,20 @@ gllightmapstate_t gl_lms;
 
 // new backend
 
+/*
 float	texCoordArray[MAX_TEXTURE_UNITS][MAX_VERTICES][2];
 float	vertexArray[MAX_VERTICES][3];
 float	colorArray[MAX_VERTICES][4];
 unsigned short int	indexArray[MAX_INDICES];
 unsigned short int	rb_vertex, rb_index;
+*/
+
+float	texCoordArray[MAX_VERTICES * 2];
+float	vertexArray[MAX_VERTICES * 3];
+int		fans_starts[MAX_FANS];
+int		fans_sizes[MAX_FANS];
+int		rb_vertex, rb_fan;
+
 
 
 void LM_InitBlock(void);
@@ -54,21 +63,24 @@ void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 static void
 R_RenderArray(void)
 {
-	if (rb_vertex == 0 || rb_index == 0)	// nothing to render
+	if (rb_vertex == 0 || rb_fan == 0)	// nothing to render
 		return;
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-	glVertexPointer (3, GL_FLOAT, sizeof(vertexArray[0]), vertexArray[0]);
-	glTexCoordPointer (2, GL_FLOAT, sizeof(texCoordArray[0][0]), texCoordArray[0][0]);
+	// glVertexPointer (3, GL_FLOAT, sizeof(vertexArray[0]), vertexArray[0]);
+	// glTexCoordPointer (2, GL_FLOAT, sizeof(texCoordArray[0][0]), texCoordArray[0][0]);
+	glVertexPointer (3, GL_FLOAT, 0, vertexArray);
+	glTexCoordPointer (2, GL_FLOAT, 0, texCoordArray);
 
-	glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, indexArray);
+	// glDrawElements(GL_TRIANGLES, rb_index, GL_UNSIGNED_SHORT, indexArray);
+	qglMultiDrawArrays(GL_TRIANGLE_FAN, fans_starts, fans_sizes, rb_fan);
 
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	glDisableClientState( GL_VERTEX_ARRAY );
 
-	rb_vertex = rb_index = 0;
+	rb_vertex = rb_fan = 0;
 }
 
 
@@ -76,11 +88,12 @@ static void
 R_DrawGLPoly(glpoly_t *p)
 {
 	float *v;
-	int	nv, i;
+	int	nv, i, j, k;
 
 	// v = p->verts[0];
 	nv = p->numverts;
 
+	/*
 	for (i=0; i < nv-2; i++) {
 		indexArray[rb_index++] = rb_vertex;
 		indexArray[rb_index++] = rb_vertex+i+1;
@@ -95,6 +108,25 @@ R_DrawGLPoly(glpoly_t *p)
 		// VA_SetElem3v(vertexArray[rb_vertex], v->xyz);
 		rb_vertex++;
 	}
+	*/
+
+	// new fan
+	j = rb_vertex * 3;	// vertex index
+	k = rb_vertex * 2;	// texcoord index
+	fans_starts[rb_fan] = rb_vertex;
+	fans_sizes[rb_fan] = nv;
+
+	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
+	{
+		vertexArray[j++] = v[ 0 ];
+		vertexArray[j++] = v[ 1 ];
+		vertexArray[j++] = v[ 2 ];
+		texCoordArray[k++] = v[ 3 ];
+		texCoordArray[k++] = v[ 4 ];
+	}
+
+	rb_vertex += nv;
+	rb_fan++;
 
 	/*
     glEnableClientState( GL_VERTEX_ARRAY );
@@ -112,7 +144,7 @@ R_DrawGLPoly(glpoly_t *p)
 static void
 R_DrawGLFlowingPoly(msurface_t *fa)
 {
-	int i, nv;
+	int i, j, k, nv;
 	float *v;
 	glpoly_t *p;
 	float scroll;
@@ -127,6 +159,7 @@ R_DrawGLFlowingPoly(msurface_t *fa)
 		scroll = -64.0;
 	}
 
+	/*
 	for (i=0; i < nv-2; i++) {
 		indexArray[rb_index++] = rb_vertex;
 		indexArray[rb_index++] = rb_vertex+i+1;
@@ -140,6 +173,25 @@ R_DrawGLFlowingPoly(msurface_t *fa)
 		// VA_SetElem2(texCoordArray[0][rb_vertex], v->texture_st[0]+scroll, v->texture_st[1]);
 		rb_vertex++;
 	}
+	*/
+
+	// new fan
+	j = rb_vertex * 3;	// vertex index
+	k = rb_vertex * 2;	// texcoord index
+	fans_starts[rb_fan] = rb_vertex;
+	fans_sizes[rb_fan] = nv;
+
+	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
+	{
+		vertexArray[j++] = v[ 0 ];
+		vertexArray[j++] = v[ 1 ];
+		vertexArray[j++] = v[ 2 ];
+		texCoordArray[k++] = v[ 3 ] + scroll;
+		texCoordArray[k++] = v[ 4 ];
+	}
+
+	rb_vertex += nv;
+	rb_fan++;
 
 	/*
     YQ2_VLA(GLfloat, tex, 2*p->numverts);
@@ -1032,7 +1084,7 @@ R_DrawWorld(void)
 	ent.frame = (int)(r_newrefdef.time * 2);
 
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
-	rb_vertex = rb_index = 0;
+	rb_vertex = rb_fan = 0;
 
 	glColor4f(1, 1, 1, 1);
 	memset(gl_lms.lightmap_surfaces, 0, sizeof(gl_lms.lightmap_surfaces));

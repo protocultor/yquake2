@@ -1562,6 +1562,11 @@ RI_Init(void)
 
 	// ----
 
+	// Error check this!
+	qglMultiDrawArrays = (void (APIENTRY *)(GLenum, const GLint *, const GLsizei *, GLsizei))RI_GetProcAddress ( "glMultiDrawArrays" );
+
+	// ----
+
 	R_SetDefaultState();
 
 	R_InitImages();
