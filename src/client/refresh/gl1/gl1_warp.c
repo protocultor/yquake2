@@ -282,7 +282,7 @@ R_EmitWaterPolys(msurface_t *fa)
 {
 	glpoly_t *p, *bp;
 	float *v;
-	int i;
+	int nv, i, j, k;
 	float s, t, os, ot;
 	float scroll;
 	float rdt = r_newrefdef.time;
@@ -296,9 +296,13 @@ R_EmitWaterPolys(msurface_t *fa)
 		scroll = 0;
 	}
 
+	j = rb_vertex * 3;	// vertex index
+	k = rb_vertex * 2;	// texcoord index
+
 	for (bp = fa->polys; bp; bp = bp->next)
 	{
 		p = bp;
+		nv = p->numverts;
 
 		for (i=0; i < p->numverts-2; i++) {
 			indexArray[rb_index++] = rb_vertex;
@@ -308,7 +312,12 @@ R_EmitWaterPolys(msurface_t *fa)
 
 		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
 		{
-			VA_SetElem3v(vertexArray[rb_vertex], v);
+			vertexArray[j] = v[ 0 ];
+			vertexArray[j+1] = v[ 1 ];
+			vertexArray[j+2] = v[ 2 ];
+			j += 3;
+
+			// VA_SetElem3v(vertexArray[rb_vertex], v);
 
 			os = v [ 3 ];
 			ot = v [ 4 ];
@@ -316,10 +325,15 @@ R_EmitWaterPolys(msurface_t *fa)
 			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
 			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
 
-			VA_SetElem2(texCoordArray[0][rb_vertex], s * ( 1.0 / 64 ), t * ( 1.0 / 64 ));
+			texCoordArray[k] = s * ( 1.0 / 64 );
+			texCoordArray[k+1] = t * ( 1.0 / 64 );
+			k += 2;
 
-			rb_vertex++;
+			// VA_SetElem2(texCoordArray[0][rb_vertex], s * ( 1.0 / 64 ), t * ( 1.0 / 64 ));
+			// rb_vertex++;
 		}
+
+		rb_vertex += nv;
 	}
 
 	/*
