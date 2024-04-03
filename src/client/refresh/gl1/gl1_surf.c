@@ -516,24 +516,12 @@ static void
 R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 {
 	int maps;
-	image_t *image;
 	qboolean is_dynamic = false;
 
 	c_brush_polys++;
 
-	image = R_TextureAnimation(currententity, fa->texinfo);
-
-	if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
-	{
-		// draw everything accumulated in the vertexes
-		// and flush it (may be dangerous?)
-		R_RenderArray();
-	}
-
 	if (fa->flags & SURF_DRAWTURB)
 	{
-		R_Bind(image->texnum);
-
 		/* This is a hack ontop of a hack. Warping surfaces like those generated
 		   by R_EmitWaterPolys() don't have a lightmap. Original Quake II therefore
 		   negated the global intensity on those surfaces, because otherwise they
@@ -566,8 +554,6 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 	}
 	else
 	{
-		R_Bind(image->texnum);
-
 		R_TexEnv(GL_REPLACE);
 	}
 
@@ -748,6 +734,13 @@ R_DrawTextureChains(entity_t *currententity)
 
 		for ( ; s; s = s->texturechain)
 		{
+			if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
+			{
+				// draw everything accumulated in the vertexes
+				// and flush it (may be dangerous?)
+				R_RenderArray();
+			}
+			R_Bind(image->texnum);	// may reset because of dynamic lighting in R_RenderBrushPoly
 			R_RenderBrushPoly(currententity, s);
 		}
 
@@ -767,6 +760,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 	float dot;
 	msurface_t *psurf;
 	dlight_t *lt;
+	image_t *image;
 
 	/* calculate dynamic lighting for bmodel */
 	if (!gl1_flashblend->value)
@@ -810,6 +804,12 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 			}
 			else
 			{
+				image = R_TextureAnimation(currententity, psurf->texinfo);
+				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
+				{
+					R_RenderArray();
+				}
+				R_Bind(image->texnum);
 				R_RenderBrushPoly(currententity, psurf);
 			}
 		}
