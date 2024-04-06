@@ -1070,13 +1070,6 @@ R_RenderView(refdef_t *fd)
 
 	R_Flash();
 
-	if (r_speeds->value)
-	{
-		R_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
-				c_brush_polys, c_alias_polys, c_visible_textures,
-				c_visible_lightmaps);
-	}
-
 	switch (gl_state.stereo_mode) {
 		case STEREO_MODE_NONE:
 			break;
@@ -1151,11 +1144,63 @@ R_SetLightLevel(entity_t *currententity)
 }
 
 static void
+DrawRightJustifiedString(int row, const char *s, int v, int scale)
+{
+	char str[20];
+	int x, y;
+
+	snprintf(str, sizeof(str), s, v);
+	x = vid.width - scale * (strlen(str) * 8 + 2);
+	y = scale * 10 * row;
+	s = str;
+
+	while (*s)
+	{
+		RDraw_CharScaled(x, y, *s, scale);
+		x += 8*scale;
+		s++;
+	}
+}
+
+static void
+R_PerformanceCounters(void)
+{
+	int scale, height;
+
+	if (r_speeds->value < 1)
+	{
+		return;
+	}
+
+	scale = vid.width / 640;
+	height = vid.height / 240;
+
+	if (scale > height)
+	{
+		scale = height;
+	}
+	if (scale < 1)
+	{
+		scale = 1;
+	}
+
+	DrawRightJustifiedString(2, "wpoly %4i", c_brush_polys, scale);
+	DrawRightJustifiedString(3, "epoly %4i", c_alias_polys, scale);
+	DrawRightJustifiedString(4, "tex %2i", c_visible_textures, scale);
+	DrawRightJustifiedString(5, "lmaps %2i", c_visible_lightmaps, scale);
+
+	// R_Printf(PRINT_ALL, "%4i wpoly %4i epoly %i tex %i lmaps\n",
+	//		c_brush_polys, c_alias_polys, c_visible_textures,
+	//		c_visible_lightmaps);
+}
+
+static void
 RI_RenderFrame(refdef_t *fd)
 {
 	R_RenderView(fd);
 	R_SetLightLevel (NULL);
 	R_SetGL2D();
+	R_PerformanceCounters();
 }
 
 void
