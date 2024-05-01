@@ -34,6 +34,7 @@ static vec3_t modelorg; /* relative to viewpoint */
 msurface_t *r_alpha_surfaces;
 
 gllightmapstate_t gl_lms;
+glbuffer_t gl_buf;
 
 void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
@@ -43,10 +44,59 @@ void R_SetCacheState(msurface_t *surf);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
 static void
+R_ApplyGLBuffer(void)
+{
+	if (gl_buf.vtx_ptr == 0 || gl_buf.idx_ptr == 0)
+	{
+		return;
+	}
+
+	glEnableClientState( GL_VERTEX_ARRAY );
+	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+	glVertexPointer (3, GL_FLOAT, 0, gl_buf.vtx);
+	glTexCoordPointer (2, GL_FLOAT, 0, gl_buf.tex);
+
+	glDrawElements(GL_TRIANGLES, gl_buf.idx_ptr, GL_UNSIGNED_SHORT, gl_buf.idx);
+
+	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	glDisableClientState( GL_VERTEX_ARRAY );
+
+	gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
+}
+
+static void
 R_DrawGLPoly(glpoly_t *p)
 {
 	float *v;
+	int	nv, i, j, k;
 
+	nv = p->numverts;
+
+	j = gl_buf.vtx_ptr * 3;      // vertex index
+	k = gl_buf.vtx_ptr * 2;      // texcoord index
+
+	for (i=0; i < nv-2; i++) {
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+	}
+
+	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
+	{
+		gl_buf.vtx[j] = v[ 0 ];
+		gl_buf.vtx[j+1] = v[ 1 ];
+		gl_buf.vtx[j+2] = v[ 2 ];
+		j += 3;
+		gl_buf.tex[k] = v[ 3 ];
+		gl_buf.tex[k+1] = v[ 4 ];
+		k += 2;
+
+	}
+
+	gl_buf.vtx_ptr += nv;
+
+	/*
 	v = p->verts[0];
 
     glEnableClientState( GL_VERTEX_ARRAY );
@@ -58,17 +108,22 @@ R_DrawGLPoly(glpoly_t *p)
 
     glDisableClientState( GL_VERTEX_ARRAY );
     glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	*/
 }
 
 static void
 R_DrawGLFlowingPoly(msurface_t *fa)
 {
-	int i;
+	int nv, i, j, k;
 	float *v;
 	glpoly_t *p;
 	float scroll;
 
 	p = fa->polys;
+	nv = p->numverts;
+
+	j = gl_buf.vtx_ptr * 3;      // vertex index
+	k = gl_buf.vtx_ptr * 2;      // texcoord index
 
 	scroll = -64 * ((r_newrefdef.time / 40.0) - (int)(r_newrefdef.time / 40.0));
 
@@ -77,6 +132,26 @@ R_DrawGLFlowingPoly(msurface_t *fa)
 		scroll = -64.0;
 	}
 
+	for (i=0; i < nv-2; i++) {
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+	}
+
+	for (i = 0, v = p->verts[0]; i < nv; i++, v += VERTEXSIZE)
+	{
+		gl_buf.vtx[j] = v[ 0 ];
+		gl_buf.vtx[j+1] = v[ 1 ];
+		gl_buf.vtx[j+2] = v[ 2 ];
+		j += 3;
+		gl_buf.tex[k] = v[ 3 ] + scroll;
+		gl_buf.tex[k+1] = v[ 4 ];
+		k += 2;
+	}
+
+	gl_buf.vtx_ptr += nv;
+
+	/*
     YQ2_VLA(GLfloat, tex, 2*p->numverts);
     unsigned int index_tex = 0;
 
@@ -100,6 +175,7 @@ R_DrawGLFlowingPoly(msurface_t *fa)
     glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
 	YQ2_VLAFREE(tex);
+	*/
 }
 
 static void
@@ -505,6 +581,8 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 			smax = (fa->extents[0] >> 4) + 1;
 			tmax = (fa->extents[1] >> 4) + 1;
 
+			R_ApplyGLBuffer();
+
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
 			R_SetCacheState(fa);
 
@@ -539,6 +617,7 @@ R_DrawAlphaSurfaces(void)
 {
 	msurface_t *s;
 	float intens;
+	float alpha = 1.0f, last_alpha = 1.0f;
 
 	/* go back to the world matrix */
 	glLoadMatrixf(r_world_matrix);
@@ -552,21 +631,33 @@ R_DrawAlphaSurfaces(void)
 
 	for (s = r_alpha_surfaces; s; s = s->texturechain)
 	{
-		R_Bind(s->texinfo->image->texnum);
-		c_brush_polys++;
-
 		if (s->texinfo->flags & SURF_TRANS33)
 		{
-			glColor4f(intens, intens, intens, 0.33);
+			// glColor4f(intens, intens, intens, 0.33);
+			alpha = 0.33f;
 		}
 		else if (s->texinfo->flags & SURF_TRANS66)
 		{
-			glColor4f(intens, intens, intens, 0.66);
+			// glColor4f(intens, intens, intens, 0.66);
+			alpha = 0.66f;
 		}
 		else
 		{
-			glColor4f(intens, intens, intens, 1);
+			// glColor4f(intens, intens, intens, 1);
+			alpha = 1.0f;
 		}
+
+		if ( gl_state.currenttextures[gl_state.currenttmu] != s->texinfo->image->texnum
+			|| alpha != last_alpha )
+		{
+			R_ApplyGLBuffer();
+			last_alpha = alpha;
+		}
+
+		R_Bind(s->texinfo->image->texnum);
+		c_brush_polys++;
+
+		glColor4f(intens, intens, intens, alpha);
 
 		if (s->flags & SURF_DRAWTURB)
 		{
@@ -581,6 +672,8 @@ R_DrawAlphaSurfaces(void)
 			R_DrawGLPoly(s->polys);
 		}
 	}
+	// Flush the last batched array
+	R_ApplyGLBuffer();
 
 	R_TexEnv(GL_REPLACE);
 	glColor4f(1, 1, 1, 1);
@@ -857,12 +950,20 @@ R_DrawTextureChains(entity_t *currententity)
 
 			for ( ; s; s = s->texturechain)
 			{
+				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
+				{
+					// draw everything accumulated in the vertexes
+					// and flush it (may be dangerous?)
+					R_ApplyGLBuffer();
+				}
 				R_Bind(image->texnum);  // may reset because of dynamic lighting in R_RenderBrushPoly
 				R_RenderBrushPoly(currententity, s);
 			}
 
 			image->texturechain = NULL;
 		}
+		// Flush the last batched array
+		R_ApplyGLBuffer();
 	}
 	else	// multitexture
 	{
@@ -964,6 +1065,10 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 			else
 			{
 				image = R_TextureAnimation(currententity, psurf->texinfo);
+				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
+				{
+					R_ApplyGLBuffer();
+				}
 
 				if (gl_config.multitexture && !(psurf->flags & SURF_DRAWTURB))
 				{
@@ -981,6 +1086,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 			}
 		}
 	}
+	R_ApplyGLBuffer();
 
 	if (!(currententity->flags & RF_TRANSLUCENT))
 	{
@@ -1007,6 +1113,7 @@ R_DrawBrushModel(entity_t *currententity, const model_t *currentmodel)
 	}
 
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
+	gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
 
 	if (currententity->angles[0] || currententity->angles[1] || currententity->angles[2])
 	{

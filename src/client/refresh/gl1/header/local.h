@@ -133,6 +133,22 @@ extern cplane_t frustum[4];
 extern int c_brush_polys, c_alias_polys;
 extern int gl_filter_min, gl_filter_max;
 
+/* GL buffer for reduced draw calls */
+#define MAX_VERTICES	16384
+#define MAX_INDICES		MAX_VERTICES * 4
+
+typedef struct	//	832k aprox.
+{
+	float	vtx[MAX_VERTICES * 3],	// vertexes
+			tex[MAX_VERTICES * 2],	// texture coordinates
+			lmc[MAX_VERTICES * 2],	// lightmap coordinates
+			col[MAX_VERTICES * 4];	// color components
+
+	short int	idx[MAX_INDICES],	// indices
+				vtx_ptr, idx_ptr;	// pointers for array positions
+
+} glbuffer_t;
+
 /* view origin */
 extern vec3_t vup;
 extern vec3_t vpn;
@@ -415,6 +431,7 @@ typedef struct
 
 extern glconfig_t gl_config;
 extern glstate_t gl_state;
+extern glbuffer_t gl_buf;	// deberia estar aqui?
 
 /*
  * Updates the gamma ramp.

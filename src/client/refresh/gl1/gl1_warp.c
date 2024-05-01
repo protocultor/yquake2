@@ -282,7 +282,7 @@ R_EmitWaterPolys(msurface_t *fa)
 {
 	glpoly_t *p, *bp;
 	float *v;
-	int i;
+	int nv, i, j, k;
 	float s, t, os, ot;
 	float scroll;
 	float rdt = r_newrefdef.time;
@@ -296,6 +296,42 @@ R_EmitWaterPolys(msurface_t *fa)
 		scroll = 0;
 	}
 
+	j = gl_buf.vtx_ptr * 3;	// vertex index
+	k = gl_buf.vtx_ptr * 2;	// texcoord index
+
+	for (bp = fa->polys; bp; bp = bp->next)
+	{
+		p = bp;
+		nv = p->numverts;
+
+		for (i=0; i < p->numverts-2; i++) {
+			gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+			gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+			gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+		}
+
+		for ( i = 0, v = p->verts [ 0 ]; i < p->numverts; i++, v += VERTEXSIZE )
+		{
+			gl_buf.vtx[j] = v[ 0 ];
+			gl_buf.vtx[j+1] = v[ 1 ];
+			gl_buf.vtx[j+2] = v[ 2 ];
+			j += 3;
+
+			os = v [ 3 ];
+			ot = v [ 4 ];
+
+			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
+			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
+
+			gl_buf.tex[k] = s * ( 1.0 / 64 );
+			gl_buf.tex[k+1] = t * ( 1.0 / 64 );
+			k += 2;
+		}
+
+		gl_buf.vtx_ptr += nv;
+	}
+
+	/*
 	// workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
 #ifdef _MSC_VER
 	int maxNumVerts = 0;
@@ -343,6 +379,7 @@ R_EmitWaterPolys(msurface_t *fa)
 	}
 
 	YQ2_VLAFREE( tex );
+	*/
 }
 
 void
