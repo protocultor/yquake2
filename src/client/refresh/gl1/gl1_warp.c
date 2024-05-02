@@ -323,8 +323,8 @@ R_EmitWaterPolys(msurface_t *fa)
 			s = os + r_turbsin [ (int) ( ( ot * 0.125 + rdt ) * TURBSCALE ) & 255 ] + scroll;
 			t = ot + r_turbsin [ (int) ( ( os * 0.125 + rdt ) * TURBSCALE ) & 255 ];
 
-			gl_buf.tex[k] = s * ( 1.0 / 64 );
-			gl_buf.tex[k+1] = t * ( 1.0 / 64 );
+			gl_buf.tex[0][k] = s * ( 1.0 / 64 );
+			gl_buf.tex[0][k+1] = t * ( 1.0 / 64 );
 			k += 2;
 		}
 

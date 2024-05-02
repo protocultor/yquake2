@@ -134,19 +134,27 @@ extern int c_brush_polys, c_alias_polys;
 extern int gl_filter_min, gl_filter_max;
 
 /* GL buffer for reduced draw calls */
+#define MAX_TEXTURE_UNITS	2
 #define MAX_VERTICES	16384
 #define MAX_INDICES		MAX_VERTICES * 4
 
 typedef struct	//	832k aprox.
 {
-	float	vtx[MAX_VERTICES * 3],	// vertexes
-			tex[MAX_VERTICES * 2],	// texture coordinates
-			lmc[MAX_VERTICES * 2],	// lightmap coordinates
-			col[MAX_VERTICES * 4];	// color components
+	float	// vertexes
+			vtx[MAX_VERTICES * 3],
+			// texture coordinates
+			tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2],
+			// color components
+			col[MAX_VERTICES * 4];
 
 	short int	idx[MAX_INDICES],	// indices
 				vtx_ptr, idx_ptr;	// pointers for array positions
 
+	// lo necesitamos en el buffer, si ya pueden bindearse por fuera?
+	// o lo mantenemos aqui por una cuestion de orden?
+	int	currenttexture[MAX_TEXTURE_UNITS];
+	float	currentalpha;
+	qboolean	multitexture;
 } glbuffer_t;
 
 /* view origin */
@@ -274,6 +282,7 @@ void Draw_InitLocal(void);
 void R_SubdivideSurface(model_t *loadmodel, msurface_t *fa);
 void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
+void R_ApplyGLBuffer(void);
 
 extern int r_dlightframecount;
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);
@@ -399,7 +408,7 @@ typedef struct
 
 	int lightmap_textures;
 
-	int currenttextures[2];
+	int currenttextures[MAX_TEXTURE_UNITS];
 	int currenttmu;
 	GLenum currenttarget;
 

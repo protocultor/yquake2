@@ -407,6 +407,7 @@ R_DrawEntitiesOnList(void)
 			}
 		}
 	}
+	// R_ApplyGLBuffer();
 
 	glDepthMask(1); /* back to writing */
 }
