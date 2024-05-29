@@ -52,7 +52,15 @@ R_ApplyGLBuffer(void)
 	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
-	glVertexPointer (3, GL_FLOAT, 0, gl_buf.vtx);
+
+	if ( gl_buf.draw2D )
+	{
+		glVertexPointer (2, GL_FLOAT, 0, gl_buf.vtx);
+	}
+	else
+	{
+		glVertexPointer (3, GL_FLOAT, 0, gl_buf.vtx);
+	}
 
 	if ( gl_buf.multitexture )
 	{
@@ -82,14 +90,20 @@ R_ApplyGLBuffer(void)
 	glDisableClientState( GL_VERTEX_ARRAY );
 
 	gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
+	gl_buf.currenttexture[0] = gl_buf.currenttexture[1] = 0;
 }
 
-static void
-R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex)
+void
+R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD)
 {
 	qboolean apply = false;
 
 	if ( gl_buf.multitexture != mtex )
+	{
+		apply = true;
+	}
+
+	if ( gl_buf.draw2D != twoD )
 	{
 		apply = true;
 	}
@@ -119,6 +133,7 @@ R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex)
 			gl_buf.currenttexture[gl_state.currenttmu] = colortex;
 		}
 		gl_buf.multitexture = mtex;
+		gl_buf.draw2D = twoD;
 	}
 }
 
@@ -638,7 +653,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 			smax = (fa->extents[0] >> 4) + 1;
 			tmax = (fa->extents[1] >> 4) + 1;
 
-			R_UpdateGLBuffer(gl_state.lightmap_textures + fa->lightmaptexturenum, 0, false);
+			R_UpdateGLBuffer(gl_state.lightmap_textures + fa->lightmaptexturenum, 0, false, false);
 
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
 			R_SetCacheState(fa);
@@ -707,7 +722,7 @@ R_DrawAlphaSurfaces(void)
 		if ( gl_state.currenttextures[gl_state.currenttmu] != s->texinfo->image->texnum
 			|| alpha != last_alpha )
 		{
-			R_UpdateGLBuffer(s->texinfo->image->texnum, 0, false);
+			R_UpdateGLBuffer(s->texinfo->image->texnum, 0, false, false);
 			last_alpha = alpha;
 		}
 
@@ -1037,7 +1052,7 @@ R_DrawTextureChains(entity_t *currententity)
 
 			for ( ; s; s = s->texturechain)
 			{
-				R_UpdateGLBuffer(image->texnum, 0, false);
+				R_UpdateGLBuffer(image->texnum, 0, false, false);
 				/*
 				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
 				{
@@ -1074,7 +1089,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (!(s->flags & SURF_DRAWTURB))
 				{
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, true);
+					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, true, false);
 					// R_MBind(GL_TEXTURE1, gl_state.lightmap_textures + s->lightmaptexturenum);	// ?
 					R_RenderLightmappedPoly(currententity, s);
 				}
@@ -1098,7 +1113,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (s->flags & SURF_DRAWTURB)
 				{
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, false);
+					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, false, false);
 					R_RenderBrushPoly(currententity, s);
 				}
 			}
@@ -1167,21 +1182,21 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 				{
 					R_UploadDynamicLights(psurf);
 					R_EnableMultitexture(true);
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum, true);
+					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum, true, false);
 					// R_MBind(GL_TEXTURE0, image->texnum);
 					R_RenderLightmappedPoly(currententity, psurf);
 				}
 				else
 				{
 					R_EnableMultitexture(false);
-					R_UpdateGLBuffer(image->texnum, 0, false);
+					R_UpdateGLBuffer(image->texnum, 0, false, false);
 					// R_Bind(image->texnum);
 					R_RenderBrushPoly(currententity, psurf);
 				}
 			}
 		}
 	}
-	R_ApplyGLBuffer();
+	R_ApplyGLBuffer();	// commenting this ruins everything :(
 
 	if (!(currententity->flags & RF_TRANSLUCENT))
 	{
@@ -1207,8 +1222,9 @@ R_DrawBrushModel(entity_t *currententity, const model_t *currentmodel)
 		return;
 	}
 
+	// Por qué existe esto? arruina mi intención de agrupar draw calls
 	gl_state.currenttextures[0] = gl_state.currenttextures[1] = -1;
-	gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
+	// gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
 
 	if (currententity->angles[0] || currententity->angles[1] || currententity->angles[2])
 	{

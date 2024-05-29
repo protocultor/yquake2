@@ -155,6 +155,7 @@ typedef struct	//	832k aprox.
 	int	currenttexture[MAX_TEXTURE_UNITS];
 	float	currentalpha;
 	qboolean	multitexture;
+	qboolean	draw2D;
 } glbuffer_t;
 
 /* view origin */
@@ -283,6 +284,7 @@ void R_SubdivideSurface(model_t *loadmodel, msurface_t *fa);
 void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
 void R_ApplyGLBuffer(void);
+void R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD);
 
 extern int r_dlightframecount;
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);

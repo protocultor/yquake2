@@ -361,6 +361,7 @@ R_DrawEntitiesOnList(void)
 			}
 		}
 	}
+	R_ApplyGLBuffer();	// finish up
 
 	/* draw transparent entities
 	   we could sort these if it ever
@@ -407,7 +408,7 @@ R_DrawEntitiesOnList(void)
 			}
 		}
 	}
-	// R_ApplyGLBuffer();
+	R_ApplyGLBuffer();	// igual al de arriba
 
 	glDepthMask(1); /* back to writing */
 }

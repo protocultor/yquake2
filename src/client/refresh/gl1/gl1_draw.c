@@ -55,6 +55,8 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 {
 	int row, col;
 	float frow, fcol, size, scaledSize;
+	int j = gl_buf.vtx_ptr * 2;      // vertex index
+	int k = gl_buf.vtx_ptr * 2;      // texcoord index
 
 	num &= 255;
 
@@ -77,6 +79,40 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 
 	scaledSize = 8*scale;
 
+	R_UpdateGLBuffer(draw_chars->texnum, 0, false, true);
+
+	// yeah, I should improve this
+	// investigar las posibilidades de las "tuplas" y otras formas de unir "arrays"
+	// desde ciertos indices en adelante
+
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+1;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+2;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+2;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+3;
+
+	gl_buf.vtx[j] = x;
+	gl_buf.vtx[j+1] = y;
+	gl_buf.vtx[j+2] = x + scaledSize;
+	gl_buf.vtx[j+3] = y;
+	gl_buf.vtx[j+4] = x + scaledSize;
+	gl_buf.vtx[j+5] = y + scaledSize;
+	gl_buf.vtx[j+6] = x;
+	gl_buf.vtx[j+7] = y + scaledSize;
+
+	gl_buf.tex[0][k] = fcol;
+	gl_buf.tex[0][k+1] = frow;
+	gl_buf.tex[0][k+2] = fcol + size;
+	gl_buf.tex[0][k+3] = frow;
+	gl_buf.tex[0][k+4] = fcol + size;
+	gl_buf.tex[0][k+5] = frow + size;
+	gl_buf.tex[0][k+6] = fcol;
+	gl_buf.tex[0][k+7] = frow + size;
+
+	gl_buf.vtx_ptr += 4;
+
+	/*
 	R_Bind(draw_chars->texnum);
 
 	GLfloat vtx[] = {
@@ -93,15 +129,27 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 		fcol, frow + size
 	};
 
+	// GL_TRIANGLE_FAN
+	// GLushort idx[] = {
+	//	0, 1, 2, 3
+	// };
+
+	GLushort idx[] = {
+		0, 1, 2, 0, 2, 3
+	};
+
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
 	glVertexPointer( 2, GL_FLOAT, 0, vtx );
 	glTexCoordPointer( 2, GL_FLOAT, 0, tex );
-	glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	// glDrawArrays( GL_TRIANGLE_FAN, 0, 4 );
+	// glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_SHORT, idx);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, idx);
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	*/
 }
 
 image_t *
