@@ -46,23 +46,34 @@ void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 void
 R_ApplyGLBuffer(void)
 {
+	// add properties of buffered draws here
+	GLint vtx_size;
+	qboolean mtex;
+
 	if (gl_buf.vtx_ptr == 0 || gl_buf.idx_ptr == 0)
 	{
 		return;
 	}
 
+	vtx_size = 3;
+	mtex = false;
+
+	switch (gl_buf.type)
+	{
+		case buf_2d:
+			vtx_size = 2;
+			break;
+		case buf_mtex:
+			mtex = true;
+			break;
+		default:
+			break;
+	}
+
 	glEnableClientState( GL_VERTEX_ARRAY );
+	glVertexPointer (vtx_size, GL_FLOAT, 0, gl_buf.vtx);
 
-	if ( gl_buf.draw2D )
-	{
-		glVertexPointer (2, GL_FLOAT, 0, gl_buf.vtx);
-	}
-	else
-	{
-		glVertexPointer (3, GL_FLOAT, 0, gl_buf.vtx);
-	}
-
-	if ( gl_buf.multitexture )
+	if ( mtex )
 	{
 		R_MBind(GL_TEXTURE0, gl_buf.currenttexture[0]);
 		R_MBind(GL_TEXTURE1, gl_buf.currenttexture[1]);
@@ -94,46 +105,28 @@ R_ApplyGLBuffer(void)
 }
 
 void
-R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD)
+R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex)
 {
-	qboolean apply = false;
-
-	if ( gl_buf.multitexture != mtex )
+	if (gl_buf.type != type || gl_state.currenttextures[0] != colortex)
 	{
-		apply = true;
+		goto apply_buffer;
 	}
 
-	if ( gl_buf.draw2D != twoD )
+	if ( gl_config.multitexture && type == buf_mtex && gl_buf.currenttexture[1] != lighttex )
 	{
-		apply = true;
+		goto apply_buffer;
 	}
 
-	// if ( gl_state.currenttextures[gl_state.currenttmu] != colortex )
-	if ( gl_buf.currenttexture[0] != colortex )
-	{
-		apply = true;
-	}
+	return;
 
-	// if ( gl_config.multitexture && mtex && gl_state.currenttextures[1] != lighttex )
-	if ( gl_config.multitexture && mtex && gl_buf.currenttexture[1] != lighttex )
-	{
-		apply = true;
-	}
+apply_buffer:
+	R_ApplyGLBuffer();
 
-	if ( apply )
+	gl_buf.type = type;
+	gl_buf.currenttexture[0] = colortex;
+	if ( gl_config.multitexture && type == buf_mtex )	// ???
 	{
-		R_ApplyGLBuffer();
-		if ( gl_config.multitexture && mtex )	// ???
-		{
-			gl_buf.currenttexture[0] = colortex;
-			gl_buf.currenttexture[1] = lighttex;
-		}
-		else
-		{
-			gl_buf.currenttexture[0] = colortex;
-		}
-		gl_buf.multitexture = mtex;
-		gl_buf.draw2D = twoD;
+		gl_buf.currenttexture[1] = lighttex;
 	}
 }
 
@@ -653,7 +646,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 			smax = (fa->extents[0] >> 4) + 1;
 			tmax = (fa->extents[1] >> 4) + 1;
 
-			R_UpdateGLBuffer(gl_state.lightmap_textures + fa->lightmaptexturenum, 0, false, false);
+			R_UpdateGLBuffer(buf_singletex, gl_state.lightmap_textures + fa->lightmaptexturenum, 0);
 
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
 			R_SetCacheState(fa);
@@ -722,7 +715,7 @@ R_DrawAlphaSurfaces(void)
 		if ( gl_state.currenttextures[gl_state.currenttmu] != s->texinfo->image->texnum
 			|| alpha != last_alpha )
 		{
-			R_UpdateGLBuffer(s->texinfo->image->texnum, 0, false, false);
+			R_UpdateGLBuffer(buf_singletex, s->texinfo->image->texnum, 0);
 			last_alpha = alpha;
 		}
 
@@ -1059,7 +1052,7 @@ R_DrawTextureChains(entity_t *currententity)
 
 			for ( ; s; s = s->texturechain)
 			{
-				R_UpdateGLBuffer(image->texnum, 0, false, false);
+				R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
 				/*
 				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
 				{
@@ -1080,7 +1073,6 @@ R_DrawTextureChains(entity_t *currententity)
 	else	// multitexture
 	{
 		R_EnableMultitexture(true);
-		gl_buf.multitexture = true;
 
 		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 		{
@@ -1096,7 +1088,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (!(s->flags & SURF_DRAWTURB))
 				{
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, true, false);
+					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum);
 					// R_MBind(GL_TEXTURE1, gl_state.lightmap_textures + s->lightmaptexturenum);	// ?
 					R_RenderLightmappedPoly(currententity, s);
 				}
@@ -1105,7 +1097,6 @@ R_DrawTextureChains(entity_t *currententity)
 		R_ApplyGLBuffer();
 
 		R_EnableMultitexture(false);
-		gl_buf.multitexture = false;
 
 		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 		{
@@ -1120,7 +1111,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (s->flags & SURF_DRAWTURB)
 				{
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, false, false);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
 					R_RenderBrushPoly(currententity, s);
 				}
 			}
@@ -1189,14 +1180,14 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 				{
 					R_UploadDynamicLights(psurf);
 					R_EnableMultitexture(true);
-					R_UpdateGLBuffer(image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum, true, false);
+					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum);
 					// R_MBind(GL_TEXTURE0, image->texnum);
 					R_RenderLightmappedPoly(currententity, psurf);
 				}
 				else
 				{
 					R_EnableMultitexture(false);
-					R_UpdateGLBuffer(image->texnum, 0, false, false);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
 					// R_Bind(image->texnum);
 					R_RenderBrushPoly(currententity, psurf);
 				}

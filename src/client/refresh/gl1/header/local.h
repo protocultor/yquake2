@@ -138,8 +138,18 @@ extern int gl_filter_min, gl_filter_max;
 #define MAX_VERTICES	16384
 #define MAX_INDICES		MAX_VERTICES * 4
 
+typedef enum
+{
+	buf_2d,
+	buf_mtex,
+	buf_singletex,
+	buf_alias
+} buffered_draw_t;
+
 typedef struct	//	832k aprox.
 {
+	buffered_draw_t	type;
+
 	GLfloat	// vertexes
 			vtx[MAX_VERTICES * 3],
 			// texture coordinates
@@ -154,8 +164,6 @@ typedef struct	//	832k aprox.
 	// o lo mantenemos aqui por una cuestion de orden?
 	int	currenttexture[MAX_TEXTURE_UNITS];
 	float	currentalpha;
-	qboolean	multitexture;
-	qboolean	draw2D;
 } glbuffer_t;
 
 /* view origin */
@@ -284,7 +292,7 @@ void R_SubdivideSurface(model_t *loadmodel, msurface_t *fa);
 void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
 void R_ApplyGLBuffer(void);
-void R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD);
+void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex);
 
 extern int r_dlightframecount;
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);
