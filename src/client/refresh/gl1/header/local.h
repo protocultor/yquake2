@@ -140,14 +140,14 @@ extern int gl_filter_min, gl_filter_max;
 
 typedef struct	//	832k aprox.
 {
-	float	// vertexes
+	GLfloat	// vertexes
 			vtx[MAX_VERTICES * 3],
 			// texture coordinates
 			tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2],
 			// color components
 			col[MAX_VERTICES * 4];
 
-	short int	idx[MAX_INDICES],	// indices
+	GLushort	idx[MAX_INDICES],	// indices
 				vtx_ptr, idx_ptr;	// pointers for array positions
 
 	// lo necesitamos en el buffer, si ya pueden bindearse por fuera?

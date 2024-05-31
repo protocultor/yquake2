@@ -55,8 +55,7 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 {
 	int row, col;
 	float frow, fcol, size, scaledSize;
-	int j = gl_buf.vtx_ptr * 2;      // vertex index
-	int k = gl_buf.vtx_ptr * 2;      // texcoord index
+	unsigned int i;
 
 	num &= 255;
 
@@ -80,6 +79,7 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 	scaledSize = 8*scale;
 
 	R_UpdateGLBuffer(draw_chars->texnum, 0, false, true);
+	i = gl_buf.vtx_ptr * 2;      // vertex && texcoord index
 
 	// yeah, I should improve this
 	// investigar las posibilidades de las "tuplas" y otras formas de unir "arrays"
@@ -92,23 +92,23 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+2;
 	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+3;
 
-	gl_buf.vtx[j] = x;
-	gl_buf.vtx[j+1] = y;
-	gl_buf.vtx[j+2] = x + scaledSize;
-	gl_buf.vtx[j+3] = y;
-	gl_buf.vtx[j+4] = x + scaledSize;
-	gl_buf.vtx[j+5] = y + scaledSize;
-	gl_buf.vtx[j+6] = x;
-	gl_buf.vtx[j+7] = y + scaledSize;
+	gl_buf.vtx[i] = x;
+	gl_buf.vtx[i+1] = y;
+	gl_buf.vtx[i+2] = x + scaledSize;
+	gl_buf.vtx[i+3] = y;
+	gl_buf.vtx[i+4] = x + scaledSize;
+	gl_buf.vtx[i+5] = y + scaledSize;
+	gl_buf.vtx[i+6] = x;
+	gl_buf.vtx[i+7] = y + scaledSize;
 
-	gl_buf.tex[0][k] = fcol;
-	gl_buf.tex[0][k+1] = frow;
-	gl_buf.tex[0][k+2] = fcol + size;
-	gl_buf.tex[0][k+3] = frow;
-	gl_buf.tex[0][k+4] = fcol + size;
-	gl_buf.tex[0][k+5] = frow + size;
-	gl_buf.tex[0][k+6] = fcol;
-	gl_buf.tex[0][k+7] = frow + size;
+	gl_buf.tex[0][i] = fcol;
+	gl_buf.tex[0][i+1] = frow;
+	gl_buf.tex[0][i+2] = fcol + size;
+	gl_buf.tex[0][i+3] = frow;
+	gl_buf.tex[0][i+4] = fcol + size;
+	gl_buf.tex[0][i+5] = frow + size;
+	gl_buf.tex[0][i+6] = fcol;
+	gl_buf.tex[0][i+7] = frow + size;
 
 	gl_buf.vtx_ptr += 4;
 
@@ -224,6 +224,7 @@ void
 RDraw_PicScaled(int x, int y, char *pic, float factor)
 {
 	image_t *gl;
+	unsigned int i;
 
 	gl = R_FindPic(pic, (findimage_t)R_FindImage);
 
@@ -236,6 +237,41 @@ RDraw_PicScaled(int x, int y, char *pic, float factor)
 	if (scrap_dirty)
 	{
 		Scrap_Upload();
+	}
+
+	if (gl->texnum == TEXNUM_SCRAPS)
+	{
+		R_UpdateGLBuffer(TEXNUM_SCRAPS, 0, false, true);
+
+		i = gl_buf.vtx_ptr * 2;      // vertex index
+
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr + 1;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr + 2;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr + 2;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr + 3;
+
+		gl_buf.vtx[i]     = x;
+		gl_buf.vtx[i + 1] = y;
+		gl_buf.vtx[i + 2] = x + gl->width * factor;
+		gl_buf.vtx[i + 3] = y;
+		gl_buf.vtx[i + 4] = x + gl->width * factor;
+		gl_buf.vtx[i + 5] = y + gl->height * factor;
+		gl_buf.vtx[i + 6] = x;
+		gl_buf.vtx[i + 7] = y + gl->height * factor;
+
+		gl_buf.tex[0][i]     = gl->sl;
+		gl_buf.tex[0][i + 1] = gl->tl;
+		gl_buf.tex[0][i + 2] = gl->sh;
+		gl_buf.tex[0][i + 3] = gl->tl;
+		gl_buf.tex[0][i + 4] = gl->sh;
+		gl_buf.tex[0][i + 5] = gl->th;
+		gl_buf.tex[0][i + 6] = gl->sl;
+		gl_buf.tex[0][i + 7] = gl->th;
+
+		gl_buf.vtx_ptr += 4;
+		return;
 	}
 
 	R_Bind(gl->texnum);
@@ -274,6 +310,7 @@ void
 RDraw_TileClear(int x, int y, int w, int h, char *pic)
 {
 	image_t *image;
+	unsigned int i;
 
 	image = R_FindPic(pic, (findimage_t)R_FindImage);
 
@@ -283,6 +320,38 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 		return;
 	}
 
+	R_UpdateGLBuffer(image->texnum, 0, false, true);
+
+	i = gl_buf.vtx_ptr * 2;      // vertex index
+
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+1;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+2;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+2;
+	gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+3;
+
+	gl_buf.vtx[i]   = x;
+	gl_buf.vtx[i+1] = y;
+	gl_buf.vtx[i+2] = x + w;
+	gl_buf.vtx[i+3] = y;
+	gl_buf.vtx[i+4] = x + w;
+	gl_buf.vtx[i+5] = y + h;
+	gl_buf.vtx[i+6] = x;
+	gl_buf.vtx[i+7] = y + h;
+
+	gl_buf.tex[0][i]   = x / 64.0;
+	gl_buf.tex[0][i+1] = y / 64.0;
+	gl_buf.tex[0][i+2] = ( x + w ) / 64.0;
+	gl_buf.tex[0][i+3] = y / 64.0;
+	gl_buf.tex[0][i+4] = ( x + w ) / 64.0;
+	gl_buf.tex[0][i+5] = ( y + h ) / 64.0;
+	gl_buf.tex[0][i+6] = x / 64.0;
+	gl_buf.tex[0][i+7] = ( y + h ) / 64.0;
+
+	gl_buf.vtx_ptr += 4;
+
+	/*
 	R_Bind(image->texnum);
 
 	GLfloat vtx[] = {
@@ -308,6 +377,7 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	*/
 }
 
 /*
@@ -354,6 +424,7 @@ RDraw_Fill(int x, int y, int w, int h, int c)
 void
 RDraw_FadeScreen(void)
 {
+	R_ApplyGLBuffer();	// draw what needs to be hidden
 	glEnable(GL_BLEND);
 	glDisable(GL_TEXTURE_2D);
 	glColor4f(0, 0, 0, 0.8);

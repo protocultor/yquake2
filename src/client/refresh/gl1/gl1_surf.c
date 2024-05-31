@@ -109,13 +109,13 @@ R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD)
 	}
 
 	// if ( gl_state.currenttextures[gl_state.currenttmu] != colortex )
-	if ( gl_buf.currenttexture[gl_state.currenttmu] != colortex )
+	if ( gl_buf.currenttexture[0] != colortex )
 	{
 		apply = true;
 	}
 
 	// if ( gl_config.multitexture && mtex && gl_state.currenttextures[1] != lighttex )
-	if ( gl_config.multitexture && mtex && gl_buf.currenttexture[gl_state.currenttmu] != lighttex )
+	if ( gl_config.multitexture && mtex && gl_buf.currenttexture[1] != lighttex )
 	{
 		apply = true;
 	}
@@ -130,7 +130,7 @@ R_UpdateGLBuffer(int colortex, int lighttex, qboolean mtex, qboolean twoD)
 		}
 		else
 		{
-			gl_buf.currenttexture[gl_state.currenttmu] = colortex;
+			gl_buf.currenttexture[0] = colortex;
 		}
 		gl_buf.multitexture = mtex;
 		gl_buf.draw2D = twoD;
