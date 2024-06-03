@@ -78,7 +78,7 @@ RDraw_CharScaled(int x, int y, int num, float scale)
 
 	scaledSize = 8*scale;
 
-	R_UpdateGLBuffer(buf_2d, draw_chars->texnum, 0);
+	R_UpdateGLBuffer(buf_2d, draw_chars->texnum, 0, 0);
 	i = gl_buf.vtx_ptr * 2;      // vertex && texcoord index
 
 	// yeah, I should improve this
@@ -241,7 +241,7 @@ RDraw_PicScaled(int x, int y, char *pic, float factor)
 
 	if (gl->texnum == TEXNUM_SCRAPS)
 	{
-		R_UpdateGLBuffer(buf_2d, TEXNUM_SCRAPS, 0);
+		R_UpdateGLBuffer(buf_2d, TEXNUM_SCRAPS, 0, 0);
 
 		i = gl_buf.vtx_ptr * 2;      // vertex index
 
@@ -320,7 +320,7 @@ RDraw_TileClear(int x, int y, int w, int h, char *pic)
 		return;
 	}
 
-	R_UpdateGLBuffer(buf_2d, image->texnum, 0);
+	R_UpdateGLBuffer(buf_2d, image->texnum, 0, 0);
 
 	i = gl_buf.vtx_ptr * 2;      // vertex index
 

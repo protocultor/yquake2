@@ -86,8 +86,8 @@ R_LerpVerts(entity_t *currententity, int nverts, dtrivertx_t *v, dtrivertx_t *ov
 static void
 R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 {
-    unsigned short total;
-    GLenum type;
+    // unsigned short total;
+    // GLenum type;
 	float l;
 	daliasframe_t *frame, *oldframe;
 	dtrivertx_t *v, *ov, *verts;
@@ -97,7 +97,7 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 	float alpha;
 	vec3_t move, delta, vectors[3];
 	vec3_t frontv, backv;
-	int i;
+	int i, j, k, n;
 	int index_xyz;
 	float *lerp;
 
@@ -154,7 +154,8 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 
 	R_LerpVerts(currententity, paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv);
 
-#ifdef _MSC_VER // workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
+/*
+// # ifdef _MSC_VER // workaround for lack of VLAs (=> our workaround uses alloca() which is bad in loops)
 	int maxCount = 0;
 	const int* tmpOrder = order;
 	while (1)
@@ -173,18 +174,84 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 	YQ2_VLA( GLfloat, vtx, 3 * maxCount );
 	YQ2_VLA( GLfloat, tex, 2 * maxCount );
 	YQ2_VLA( GLfloat, clr, 4 * maxCount );
-#endif
+// # endif
+*/
 
-		while (1)
+	// R_UpdateGLBuffer(buf_alias, texnum, 0);
+
+	i = gl_buf.vtx_ptr * 3;		// vertex index
+	j = gl_buf.vtx_ptr * 2;		// texture index
+	k = gl_buf.vtx_ptr * 4;		// color index
+
+	while (1)
+	{
+		/* get the vertex count and primitive type */
+		count = *order++;
+
+		if (!count)
 		{
-			/* get the vertex count and primitive type */
-			count = *order++;
+			break; /* done */
+		}
 
-			if (!count)
+		if (count < 0)
+		{
+			count = -count;
+
+			// GL_TRIANGLE_FAN
+			for (n = 0; n < count-2; n++)
 			{
-				break; /* done */
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+1;
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+2;
 			}
+		}
+		else
+		{
+			// GL_TRIANGLE_STRIP
+			for (n = 0; n < count-2; n++)
+			{
+				if (n % 2 == 0)
+				{
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+1;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+2;
+				}
+				else	// backwards order
+				{
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+2;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n+1;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+n;
+				}
+			}
+		}
 
+		gl_buf.vtx_ptr += count;
+
+		do
+		{
+			// texture coordinates come from the draw list
+			gl_buf.tex[0][j++] = ((float *) order)[0];
+			gl_buf.tex[0][j++] = ((float *) order)[1];
+
+			index_xyz = order[2];
+			order += 3;
+
+			// normals and vertexes come from the frame list
+			l = shadedots[verts[index_xyz].lightnormalindex];
+
+			gl_buf.clr[k++] = l * shadelight[0];
+			gl_buf.clr[k++] = l * shadelight[1];
+			gl_buf.clr[k++] = l * shadelight[2];
+			gl_buf.clr[k++] = alpha;
+
+			gl_buf.vtx[i++] = s_lerped[index_xyz][0];
+			gl_buf.vtx[i++] = s_lerped[index_xyz][1];
+			gl_buf.vtx[i++] = s_lerped[index_xyz][2];
+		}
+		while (--count);
+	}
+
+/*
 			if (count < 0)
 			{
 				count = -count;
@@ -230,14 +297,14 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 			{
 				do
 				{
-					/* texture coordinates come from the draw list */
+					// texture coordinates come from the draw list
 					tex[index_tex++] = ((float *) order)[0];
 					tex[index_tex++] = ((float *) order)[1];
 
 					index_xyz = order[2];
 					order += 3;
 
-					/* normals and vertexes come from the frame list */
+					// normals and vertexes come from the frame list
 					l = shadedots[verts[index_xyz].lightnormalindex];
 
 					clr[index_clr++] = l * shadelight[0];
@@ -276,6 +343,7 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 	{
 		glEnable(GL_TEXTURE_2D);
 	}
+	*/
 }
 
 static void
@@ -557,7 +625,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		}
 	}
 
-	R_EnableMultitexture(false);
+	// R_EnableMultitexture(false);
 	paliashdr = (dmdl_t *)currentmodel->extradata;
 
 	/* get lighting information */
@@ -707,10 +775,11 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 	/* locate the proper data */
 	c_alias_polys += paliashdr->num_tris;
 
-	/* draw all the triangles */
+	/*
+	// draw all the triangles
 	if (currententity->flags & RF_DEPTHHACK)
 	{
-		/* hack the depth range to prevent view model from poking into walls */
+		// hack the depth range to prevent view model from poking into walls
 		glDepthRange(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
 	}
 
@@ -745,6 +814,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 			glCullFace(GL_BACK);
 		}
 	}
+	*/
 
 	glPushMatrix();
 	currententity->angles[PITCH] = -currententity->angles[PITCH];
@@ -778,9 +848,10 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		skin = r_notexture; /* fallback... */
 	}
 
-	R_Bind(skin->texnum);
+	/*
+	// R_Bind(skin->texnum);
 
-	/* draw it */
+	// draw it
 	glShadeModel(GL_SMOOTH);
 
 	R_TexEnv(GL_MODULATE);
@@ -789,6 +860,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 	{
 		glEnable(GL_BLEND);
 	}
+	*/
 
 	if ((currententity->frame >= paliashdr->num_frames) ||
 		(currententity->frame < 0))
@@ -813,10 +885,14 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		currententity->backlerp = 0;
 	}
 
+	R_UpdateGLBuffer(buf_alias, skin->texnum, 0, currententity->flags);
 	R_DrawAliasFrameLerp(currententity, paliashdr, currententity->backlerp);
+	R_ApplyGLBuffer();	// this should go away, but everything falls without it
 
+	/*
 	R_TexEnv(GL_REPLACE);
 	glShadeModel(GL_FLAT);
+	*/
 
 	glPopMatrix();
 
@@ -825,6 +901,13 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		glDisable(GL_CULL_FACE);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDisable(GL_TEXTURE_2D);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(3, GL_FLOAT, 0, bbox);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 8);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		/*
 		glBegin(GL_TRIANGLE_STRIP);
 
 		for (i = 0; i < 8; i++)
@@ -833,11 +916,13 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		}
 
 		glEnd();
+		*/
 		glEnable(GL_TEXTURE_2D);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glEnable(GL_CULL_FACE);
 	}
 
+	/*
 	if (currententity->flags & RF_WEAPONMODEL)
 	{
 		glMatrixMode(GL_PROJECTION);
@@ -856,6 +941,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 	{
 		glDepthRange(gldepthmin, gldepthmax);
 	}
+	*/
 
 	if (gl_shadows->value &&
 		!(currententity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_NOSHADOW)))

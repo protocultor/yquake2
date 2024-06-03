@@ -43,12 +43,15 @@ qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 void R_SetCacheState(msurface_t *surf);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
+extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+
 void
 R_ApplyGLBuffer(void)
 {
 	// add properties of buffered draws here
 	GLint vtx_size;
-	qboolean mtex;
+	qboolean mtex, color;
+	float fovy, dist;
 
 	if (gl_buf.vtx_ptr == 0 || gl_buf.idx_ptr == 0)
 	{
@@ -56,7 +59,7 @@ R_ApplyGLBuffer(void)
 	}
 
 	vtx_size = 3;
-	mtex = false;
+	mtex = color = false;
 
 	switch (gl_buf.type)
 	{
@@ -66,14 +69,59 @@ R_ApplyGLBuffer(void)
 		case buf_mtex:
 			mtex = true;
 			break;
+		case buf_alias:
+			color = true;
+			break;
 		default:
 			break;
+	}
+
+	R_EnableMultitexture(mtex);
+
+	if (color)
+	{
+		if (gl_buf.flags & RF_DEPTHHACK)
+		{
+			// hack the depth range to prevent view model from poking into walls
+			glDepthRange(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
+		}
+
+		if (gl_buf.flags & RF_WEAPONMODEL)
+		{
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadIdentity();
+
+			if (gl_lefthand->value == 1.0f)
+			{
+				glScalef(-1, 1, 1);
+			}
+
+			fovy = (r_gunfov->value < 0) ? r_newrefdef.fov_y : r_gunfov->value;
+			dist = (r_farsee->value == 0) ? 4096.0f : 8192.0f;
+			R_MYgluPerspective(fovy, (float)r_newrefdef.width / r_newrefdef.height, 4, dist);
+
+			glMatrixMode(GL_MODELVIEW);
+
+			if (gl_lefthand->value == 1.0f)
+			{
+				glCullFace(GL_BACK);
+			}
+		}
+
+		glShadeModel(GL_SMOOTH);
+		R_TexEnv(GL_MODULATE);
+
+		if (gl_buf.flags & RF_TRANSLUCENT)
+		{
+			glEnable(GL_BLEND);
+		}
 	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer (vtx_size, GL_FLOAT, 0, gl_buf.vtx);
 
-	if ( mtex )
+	if (mtex)
 	{
 		R_MBind(GL_TEXTURE0, gl_buf.currenttexture[0]);
 		R_MBind(GL_TEXTURE1, gl_buf.currenttexture[1]);
@@ -95,24 +143,68 @@ R_ApplyGLBuffer(void)
 		glTexCoordPointer (2, GL_FLOAT, 0, gl_buf.tex[0]);
 	}
 
+	if (color)
+	{
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(4, GL_FLOAT, 0, gl_buf.clr);
+		// Com_Printf("Tex=%d, idx=%d, vtx=%d\n", gl_buf.currenttexture[0], gl_buf.idx_ptr, gl_buf.vtx_ptr);
+	}
+
 	glDrawElements(GL_TRIANGLES, gl_buf.idx_ptr, GL_UNSIGNED_SHORT, gl_buf.idx);
+
+	if (color)
+	{
+		glDisableClientState(GL_COLOR_ARRAY);
+	}
 
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
 	glDisableClientState( GL_VERTEX_ARRAY );
 
+	if (color)	// turn back everything
+	{
+		if (gl_buf.flags & RF_TRANSLUCENT)
+		{
+			glDisable(GL_BLEND);
+		}
+
+		R_TexEnv(GL_REPLACE);
+		glShadeModel(GL_FLAT);
+
+		if (gl_buf.flags & RF_WEAPONMODEL)
+		{
+			glMatrixMode(GL_PROJECTION);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+			if (gl_lefthand->value == 1.0F)
+			{
+				glCullFace(GL_FRONT);
+			}
+		}
+
+		if (gl_buf.flags & RF_DEPTHHACK)
+		{
+			glDepthRange(gldepthmin, gldepthmax);
+		}
+	}
+
 	gl_buf.vtx_ptr = gl_buf.idx_ptr = 0;
-	gl_buf.currenttexture[0] = gl_buf.currenttexture[1] = 0;
+	// gl_buf.currenttexture[0] = gl_buf.currenttexture[1] = 0;	// borrar, esto lo jode todo
 }
 
 void
-R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex)
+R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int entityflags)
 {
-	if (gl_buf.type != type || gl_state.currenttextures[0] != colortex)
+	if (gl_buf.type != type || gl_buf.currenttexture[0] != colortex)
 	{
 		goto apply_buffer;
 	}
 
-	if ( gl_config.multitexture && type == buf_mtex && gl_buf.currenttexture[1] != lighttex )
+	if (gl_config.multitexture && type == buf_mtex && gl_buf.currenttexture[1] != lighttex)
+	{
+		goto apply_buffer;
+	}
+
+	if (type == buf_alias && gl_buf.flags != entityflags)
 	{
 		goto apply_buffer;
 	}
@@ -127,6 +219,10 @@ apply_buffer:
 	if ( gl_config.multitexture && type == buf_mtex )	// ???
 	{
 		gl_buf.currenttexture[1] = lighttex;
+	}
+	else if (type == buf_alias)
+	{
+		gl_buf.flags = entityflags;
 	}
 }
 
@@ -646,7 +742,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 			smax = (fa->extents[0] >> 4) + 1;
 			tmax = (fa->extents[1] >> 4) + 1;
 
-			R_UpdateGLBuffer(buf_singletex, gl_state.lightmap_textures + fa->lightmaptexturenum, 0);
+			R_UpdateGLBuffer(buf_singletex, gl_state.lightmap_textures + fa->lightmaptexturenum, 0, 0);
 
 			R_BuildLightMap(fa, (void *)temp, smax * 4);
 			R_SetCacheState(fa);
@@ -715,7 +811,7 @@ R_DrawAlphaSurfaces(void)
 		if ( gl_state.currenttextures[gl_state.currenttmu] != s->texinfo->image->texnum
 			|| alpha != last_alpha )
 		{
-			R_UpdateGLBuffer(buf_singletex, s->texinfo->image->texnum, 0);
+			R_UpdateGLBuffer(buf_singletex, s->texinfo->image->texnum, 0, 0);
 			last_alpha = alpha;
 		}
 
@@ -1052,7 +1148,7 @@ R_DrawTextureChains(entity_t *currententity)
 
 			for ( ; s; s = s->texturechain)
 			{
-				R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
+				R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0);
 				/*
 				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
 				{
@@ -1088,7 +1184,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (!(s->flags & SURF_DRAWTURB))
 				{
-					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum);
+					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + s->lightmaptexturenum, 0);
 					// R_MBind(GL_TEXTURE1, gl_state.lightmap_textures + s->lightmaptexturenum);	// ?
 					R_RenderLightmappedPoly(currententity, s);
 				}
@@ -1111,7 +1207,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (s->flags & SURF_DRAWTURB)
 				{
-					R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0);
 					R_RenderBrushPoly(currententity, s);
 				}
 			}
@@ -1180,14 +1276,14 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 				{
 					R_UploadDynamicLights(psurf);
 					R_EnableMultitexture(true);
-					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum);
+					R_UpdateGLBuffer(buf_mtex, image->texnum, gl_state.lightmap_textures + psurf->lightmaptexturenum, 0);
 					// R_MBind(GL_TEXTURE0, image->texnum);
 					R_RenderLightmappedPoly(currententity, psurf);
 				}
 				else
 				{
 					R_EnableMultitexture(false);
-					R_UpdateGLBuffer(buf_singletex, image->texnum, 0);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0);
 					// R_Bind(image->texnum);
 					R_RenderBrushPoly(currententity, psurf);
 				}

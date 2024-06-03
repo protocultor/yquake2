@@ -155,7 +155,7 @@ typedef struct	//	832k aprox.
 			// texture coordinates
 			tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2],
 			// color components
-			col[MAX_VERTICES * 4];
+			clr[MAX_VERTICES * 4];
 
 	GLushort	idx[MAX_INDICES],	// indices
 				vtx_ptr, idx_ptr;	// pointers for array positions
@@ -163,6 +163,8 @@ typedef struct	//	832k aprox.
 	// lo necesitamos en el buffer, si ya pueden bindearse por fuera?
 	// o lo mantenemos aqui por una cuestion de orden?
 	int	currenttexture[MAX_TEXTURE_UNITS];
+
+	int	flags;	// entity flags for buf_alias
 	float	currentalpha;
 } glbuffer_t;
 
@@ -292,7 +294,7 @@ void R_SubdivideSurface(model_t *loadmodel, msurface_t *fa);
 void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
 void R_ApplyGLBuffer(void);
-void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex);
+void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int entityflags);
 
 extern int r_dlightframecount;
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);
