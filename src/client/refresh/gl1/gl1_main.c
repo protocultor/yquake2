@@ -411,6 +411,7 @@ R_DrawEntitiesOnList(void)
 	R_ApplyGLBuffer();	// igual al de arriba
 
 	glDepthMask(GL_TRUE); /* back to writing */
+	R_EnableMultitexture(false);
 }
 
 void

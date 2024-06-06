@@ -1168,7 +1168,7 @@ R_DrawTextureChains(entity_t *currententity)
 	}
 	else	// multitexture
 	{
-		R_EnableMultitexture(true);
+		// R_EnableMultitexture(true);	// no longer needed, R_ApplyGLBuffer() does it now
 
 		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 		{
@@ -1192,7 +1192,7 @@ R_DrawTextureChains(entity_t *currententity)
 		}
 		R_ApplyGLBuffer();
 
-		R_EnableMultitexture(false);
+		R_EnableMultitexture(false);	// needed to reset status, we may not have SURF_DRAWTURB surfaces in the next loop
 
 		for (i = 0, image = gltextures; i < numgltextures; i++, image++)
 		{
@@ -1201,7 +1201,8 @@ R_DrawTextureChains(entity_t *currententity)
 				continue;
 			}
 
-			R_Bind(image->texnum);	// no danger of resetting in R_RenderBrushPoly
+			// Si no hay brushes con SURF_DRAWTURB, esto genera una seguidilla de llamadas a glBindTexture sin frutos
+			// R_Bind(image->texnum);	// no danger of resetting in R_RenderBrushPoly
 
 			for (s = image->texturechain; s; s = s->texturechain)
 			{
