@@ -143,7 +143,8 @@ typedef enum
 	buf_2d,
 	buf_mtex,
 	buf_singletex,
-	buf_alias
+	buf_alias,
+	buf_flash
 } buffered_draw_t;
 
 typedef struct	//	832k aprox.

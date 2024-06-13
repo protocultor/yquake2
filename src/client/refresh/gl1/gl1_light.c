@@ -35,12 +35,49 @@ static float s_blocklights[34 * 34 * 3];
 void
 R_RenderDlight(dlight_t *light)
 {
-	int i, j;
+	const float rad = light->intensity * 0.35;
+	int i, j, k, n;
 	float a;
-	float rad;
 
-	rad = light->intensity * 0.35;
+	j = gl_buf.vtx_ptr * 3;		// vertex index
+	k = gl_buf.vtx_ptr * 4;		// color index
 
+	for (i = 0; i < 16; i++) {
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+		gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+	}
+
+	gl_buf.clr[k++] = light->color [ 0 ] * 0.2;
+	gl_buf.clr[k++] = light->color [ 1 ] * 0.2;
+	gl_buf.clr[k++] = light->color [ 2 ] * 0.2;
+	gl_buf.clr[k++] = 1;
+
+	for ( i = 0; i < 3; i++ )
+	{
+		gl_buf.vtx[j + i] = light->origin [ i ] - vpn [ i ] * rad;
+	}
+	j += 3;
+
+	for ( i = 16; i >= 0; i-- )
+	{
+		gl_buf.clr[k++] = 0;
+		gl_buf.clr[k++] = 0;
+		gl_buf.clr[k++] = 0;
+		gl_buf.clr[k++] = 1;
+
+		a = i / 16.0 * M_PI * 2;
+
+		for ( n = 0; n < 3; n++ )
+		{
+			gl_buf.vtx[j++]  = light->origin [ n ] + vright [ n ] * cos( a ) * rad
+				+ vup [ n ] * sin( a ) * rad;
+		}
+	}
+
+	gl_buf.vtx_ptr += 18;
+
+	/*
 	GLfloat vtx[3*18];
 	GLfloat clr[4*18];
 
@@ -82,6 +119,7 @@ R_RenderDlight(dlight_t *light)
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 	glDisableClientState( GL_COLOR_ARRAY );
+	*/
 }
 
 void
@@ -94,6 +132,7 @@ R_RenderDlights(void)
 	{
 		return;
 	}
+	R_UpdateGLBuffer(buf_flash, 0, 0, 0);
 
 	/* because the count hasn't advanced yet for this frame */
 	r_dlightframecount = r_framecount + 1;
@@ -110,6 +149,7 @@ R_RenderDlights(void)
 	{
 		R_RenderDlight(l);
 	}
+	R_ApplyGLBuffer();
 
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);

@@ -50,7 +50,7 @@ R_ApplyGLBuffer(void)
 {
 	// add properties of buffered draws here
 	GLint vtx_size;
-	qboolean mtex, color;
+	qboolean mtex, alias, texture, color;
 	float fovy, dist;
 
 	if (gl_buf.vtx_ptr == 0 || gl_buf.idx_ptr == 0)
@@ -58,9 +58,12 @@ R_ApplyGLBuffer(void)
 		return;
 	}
 
+	// defaults for drawing
 	vtx_size = 3;
-	mtex = color = false;
+	mtex = alias = color = false;
+	texture = true;
 
+	// choosing features by type
 	switch (gl_buf.type)
 	{
 		case buf_2d:
@@ -70,6 +73,10 @@ R_ApplyGLBuffer(void)
 			mtex = true;
 			break;
 		case buf_alias:
+			alias = color = true;
+			break;
+		case buf_flash:
+			texture = false;
 			color = true;
 			break;
 		default:
@@ -78,7 +85,7 @@ R_ApplyGLBuffer(void)
 
 	R_EnableMultitexture(mtex);
 
-	if (color)
+	if (alias)
 	{
 		if (gl_buf.flags & RF_DEPTHHACK)
 		{
@@ -121,33 +128,37 @@ R_ApplyGLBuffer(void)
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer (vtx_size, GL_FLOAT, 0, gl_buf.vtx);
 
-	if (mtex)
+	if (texture)
 	{
-		R_MBind(GL_TEXTURE0, gl_buf.currenttexture[0]);
-		R_MBind(GL_TEXTURE1, gl_buf.currenttexture[1]);
+		if (mtex)
+		{
+			// TMU 1: Lightmap texture
+			R_MBind(GL_TEXTURE1, gl_buf.currenttexture[1]);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			// qglClientActiveTexture(GL_TEXTURE1);
+			glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[1]);
 
-		// TMU 0: Color texture
+			// TMU 0: Color texture
+			R_MBind(GL_TEXTURE0, gl_buf.currenttexture[0]);
+			// glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			// qglClientActiveTexture(GL_TEXTURE0);
+			// glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[0]);
+		}
+		else
+		{
+			R_Bind(gl_buf.currenttexture[0]);
+			// glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			// glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[0]);
+		}
+
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE0);
 		glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[0]);
-
-		// TMU 1: Lightmap texture
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE1);
-		glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[1]);
-	}
-	else
-	{
-		R_Bind(gl_buf.currenttexture[0]);
-		glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-		glTexCoordPointer (2, GL_FLOAT, 0, gl_buf.tex[0]);
 	}
 
 	if (color)
 	{
 		glEnableClientState(GL_COLOR_ARRAY);
 		glColorPointer(4, GL_FLOAT, 0, gl_buf.clr);
-		// Com_Printf("Tex=%d, idx=%d, vtx=%d\n", gl_buf.currenttexture[0], gl_buf.idx_ptr, gl_buf.vtx_ptr);
 	}
 
 	glDrawElements(GL_TRIANGLES, gl_buf.idx_ptr, GL_UNSIGNED_SHORT, gl_buf.idx);
@@ -157,10 +168,14 @@ R_ApplyGLBuffer(void)
 		glDisableClientState(GL_COLOR_ARRAY);
 	}
 
-	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	if (texture)
+	{
+		glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+	}
+
 	glDisableClientState( GL_VERTEX_ARRAY );
 
-	if (color)	// turn back everything
+	if (alias)	// turn back everything
 	{
 		if (gl_buf.flags & RF_TRANSLUCENT)
 		{
