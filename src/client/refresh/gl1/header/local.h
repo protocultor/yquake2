@@ -40,8 +40,8 @@
 #endif
 
 #define TEXNUM_LIGHTMAPS 1024
-#define TEXNUM_SCRAPS 1152
-#define TEXNUM_IMAGES 1153
+#define TEXNUM_SCRAPS 1280
+#define TEXNUM_IMAGES 1281
 #define MAX_GLTEXTURES 1024
 #define MAX_SCRAPS 1
 #define BLOCK_WIDTH 128		// default values; now defined in glstate_t
@@ -308,8 +308,6 @@ void R_MarkSurfaceLights(dlight_t *light, int bit, mnode_t *node,
 
 void COM_StripExtension(char *in, char *out);
 
-void R_SwapBuffers(int);
-
 image_t *R_LoadPic(const char *name, byte *pic, int width, int realwidth,
 		int height, int realheight, size_t data_size, imagetype_t type, int bits);
 image_t *R_FindImage(const char *name, imagetype_t type);
@@ -334,6 +332,7 @@ void glCheckError_(const char *file, const char *function, int line);
 // Either way, errors are caught, since error flags are persisted until the next glGetError() call.
 // So they show, even if the location of the error is inaccurate.
 #define glDrawArrays(...) glDrawArrays(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
+#define glDrawElements(...) glDrawElements(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexImage2D(...) glTexImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexSubImage2D(...) glTexSubImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexEnvf(...) glTexEnvf(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
@@ -385,6 +384,13 @@ void R_DrawParticles2(int n,
 /*
  * GL config stuff
  */
+
+typedef struct
+{
+	int top, bottom, left, right;
+} lmrect_t;
+
+extern lmrect_t lmchange[MAX_LIGHTMAPS];
 
 typedef struct
 {
@@ -448,6 +454,7 @@ typedef struct
 	/* the lightmap texture data needs to be kept in
 	   main memory so texsubimage can update properly */
 	byte *lightmap_buffer[MAX_LIGHTMAPS];
+	byte *staticlm_buffer[MAX_LIGHTMAPS];
 } gllightmapstate_t;
 
 extern glconfig_t gl_config;

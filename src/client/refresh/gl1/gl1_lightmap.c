@@ -40,7 +40,12 @@ LM_FreeLightmapBuffers(void)
 		{
 			free(gl_lms.lightmap_buffer[i]);
 		}
+		if (gl_lms.staticlm_buffer[i])
+		{
+			free(gl_lms.staticlm_buffer[i]);
+		}
 		gl_lms.lightmap_buffer[i] = NULL;
+		gl_lms.staticlm_buffer[i] = NULL;
 	}
 
 	if (gl_lms.allocated)
@@ -60,7 +65,11 @@ LM_AllocLightmapBuffer(int buffer, qboolean clean)
 	{
 		gl_lms.lightmap_buffer[buffer] = malloc (lightmap_size);
 	}
-	if (!gl_lms.lightmap_buffer[buffer])
+	if (!gl_lms.staticlm_buffer[buffer])
+	{
+		gl_lms.staticlm_buffer[buffer] = malloc (lightmap_size);
+	}
+	if (!gl_lms.lightmap_buffer[buffer] || !gl_lms.staticlm_buffer[buffer])
 	{
 		ri.Sys_Error(ERR_FATAL, "Could not allocate lightmap buffer %d\n",
 			buffer);
@@ -68,6 +77,7 @@ LM_AllocLightmapBuffer(int buffer, qboolean clean)
 	if (clean)
 	{
 		memset (gl_lms.lightmap_buffer[buffer], 0, lightmap_size);
+		memset (gl_lms.staticlm_buffer[buffer], 0, lightmap_size);
 	}
 }
 
@@ -79,6 +89,10 @@ LM_InitBlock(void)
 	if (gl_config.multitexture)
 	{
 		LM_AllocLightmapBuffer(gl_lms.current_lightmap_texture, false);
+		lmchange[gl_lms.current_lightmap_texture].top = gl_state.block_height;
+		lmchange[gl_lms.current_lightmap_texture].bottom = 0;
+		lmchange[gl_lms.current_lightmap_texture].left = gl_state.block_width;
+		lmchange[gl_lms.current_lightmap_texture].right = 0;
 	}
 }
 
@@ -116,6 +130,24 @@ LM_UploadBlock(qboolean dynamic)
 				gl_state.block_width, gl_state.block_height,
 				0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
 				gl_lms.lightmap_buffer[buffer]);
+
+		// Upload to dynamic texture
+		R_Bind(gl_state.lightmap_textures + gl_state.max_lightmaps + texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
+				gl_state.block_width, gl_state.block_height,
+				0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
+				gl_lms.lightmap_buffer[buffer]);
+
+		// Since lightmap_buffer will be constantly altered by dynamic lights,
+		// we need an unaltered copy. At least it's better than regenerating it
+		// every single time we need it.
+		if (buffer != 0)
+		{
+			memcpy(gl_lms.staticlm_buffer[buffer], gl_lms.lightmap_buffer[buffer],
+				gl_state.block_width * gl_state.block_height * LIGHTMAP_BYTES);
+		}
 
 		if (++gl_lms.current_lightmap_texture == gl_state.max_lightmaps)
 		{

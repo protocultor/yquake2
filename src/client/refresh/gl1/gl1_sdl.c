@@ -47,6 +47,8 @@ void
 RI_EndFrame(void)
 {
 	R_ApplyGLBuffer();	// to draw buffered 2D text
+	// static const GLenum attachments[] = { GL_DEPTH_EXT, GL_STENCIL_EXT };
+	// glDiscardFramebufferEXT(GL_FRAMEBUFFER_OES, 2, attachments);
 	SDL_GL_SwapWindow(window);
 }
 
