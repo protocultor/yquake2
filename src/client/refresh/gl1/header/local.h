@@ -334,6 +334,7 @@ void glCheckError_(const char *file, const char *function, int line);
 // Either way, errors are caught, since error flags are persisted until the next glGetError() call.
 // So they show, even if the location of the error is inaccurate.
 #define glDrawArrays(...) glDrawArrays(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
+#define glDrawElements(...) glDrawElements(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexImage2D(...) glTexImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexSubImage2D(...) glTexSubImage2D(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glTexEnvf(...) glTexEnvf(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
