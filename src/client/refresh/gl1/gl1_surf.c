@@ -1039,6 +1039,7 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 static void
 R_RegenAllLightmaps()
 {
+	static qboolean changed_last_frame[MAX_LIGHTMAPS];
 	int i, map, smax, tmax, top, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
 	qboolean pixelstore_set = false;
 	msurface_t *surf;
@@ -1059,14 +1060,16 @@ R_RegenAllLightmaps()
 		}
 
 		// restore to static lightmap if it has been changed in the past
-		if (lmchange[i].top <= lmchange[i].bottom)
+		if (changed_last_frame[i])
 		{
 			int offset = (lmchange[i].top * gl_state.block_width + lmchange[i].left) * LIGHTMAP_BYTES;
 
 			memcpy( gl_lms.lightmap_buffer[i] + offset, gl_lms.staticlm_buffer[i] + offset,
 				( (gl_state.block_width - lmchange[i].left) +
-				  (gl_state.block_width * (lmchange[i].bottom - lmchange[i].top)) +
+				  (gl_state.block_width * (lmchange[i].bottom - lmchange[i].top - 2)) +
 				  lmchange[i].right ) * LIGHTMAP_BYTES );
+
+			changed_last_frame[i] = false;
 		}
 
 		bt = gl_state.block_height;
@@ -1119,6 +1122,7 @@ R_RegenAllLightmaps()
 		{
 			continue;
 		}
+		changed_last_frame[i] = true;
 
 		if (!pixelstore_set)
 		{
