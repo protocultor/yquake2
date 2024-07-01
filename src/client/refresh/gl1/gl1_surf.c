@@ -1051,7 +1051,7 @@ R_RegenAllLightmaps()
 	static qboolean changed_last_frame[DYNAMIC_COPIES][MAX_LIGHTMAPS];
 	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
 
-	int i, map, smax, tmax, top, cc, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
+	int i, map, smax, tmax, top, cc, lmtex, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
 	qboolean pixelstore_set = false;
 	msurface_t *surf;
 	lmrect_t changed;
@@ -1073,7 +1073,7 @@ R_RegenAllLightmaps()
 
 		if (gl_config.triplelightmap)
 		{
-			current_copy[i] = (current_copy[i] + 1) % DYNAMIC_COPIES;	// alternate between calls
+			current_copy[i] = (current_copy[i] + LIGHTMAP_COPY_SKIP) % DYNAMIC_COPIES;	// alternate between calls
 			cc = current_copy[i];
 			changed = lmchange[cc][i];
 
@@ -1089,6 +1089,10 @@ R_RegenAllLightmaps()
 
 				changed_last_frame[cc][i] = false;
 			}
+		}
+		else
+		{
+			cc = 0;
 		}
 
 		bt = gl_state.block_height;
@@ -1150,18 +1154,31 @@ R_RegenAllLightmaps()
 		}
 
 		// Obtain the entire area to be updated in the next glTexSubImage2D
-		// Considers changes in the last frame to be reset with the static lightmap
-		// plus the new changes in this frame by dynamic lighting.
-		ut = (bt < changed.top)? bt : changed.top;
-		ub = (bb > changed.bottom)? bb : changed.bottom;
-		ul = (bl < changed.left)? bl : changed.left;
-		ur = (br > changed.right)? br : changed.right;
+		if (gl_config.triplelightmap)
+		{
+			// Considers changes in the last frame to be reset with the static lightmap
+			// plus the new changes in this frame by dynamic lighting.
+			ut = (bt < changed.top)? bt : changed.top;
+			ub = (bb > changed.bottom)? bb : changed.bottom;
+			ul = (bl < changed.left)? bl : changed.left;
+			ur = (br > changed.right)? br : changed.right;
+
+			lmtex = gl_state.max_lightmaps * (cc + 1);
+		}
+		else
+		{
+			ut = bt;
+			ub = bb;
+			ul = bl;
+			ur = br;
+			lmtex = 0;
+		}
 
 		base = gl_lms.lightmap_buffer[cc][i];
 		base += (ut * gl_state.block_width + ul) * LIGHTMAP_BYTES;
 
 		// upload changes
-		R_Bind(gl_state.lightmap_textures + gl_state.max_lightmaps * (cc + 1) + i);
+		R_Bind(gl_state.lightmap_textures + i + lmtex);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, ul, ut, ur - ul, ub - ut,
 						GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, base);
 
