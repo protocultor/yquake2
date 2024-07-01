@@ -28,6 +28,13 @@
 
 #include "header/local.h"
 
+#define DYNAMIC_COPIES MAX_LIGHTMAP_COPIES - 1	// last one is the static lightmap
+
+typedef struct
+{
+	int top, bottom, left, right;
+} lmrect_t;
+
 int c_visible_lightmaps;
 int c_visible_textures;
 static vec3_t modelorg; /* relative to viewpoint */
@@ -36,8 +43,8 @@ msurface_t *r_alpha_surfaces;
 gllightmapstate_t gl_lms;
 glbuffer_t gl_buf;
 
-lmrect_t lmchange[MAX_LIGHTMAPS];
 static qboolean dynamic_frame[MAX_LIGHTMAPS];
+static int current_copy[DYNAMIC_COPIES];
 
 void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
@@ -137,10 +144,12 @@ R_ApplyGLBuffer(void)
 		{
 			// TMU 1: Lightmap texture
 			// We check here if it's static or dynamic
-			int lmtexture = gl_state.lightmap_textures + gl_buf.currenttexture[1];
-			if (dynamic_frame[gl_buf.currenttexture[1]])
+			const int ct = gl_buf.currenttexture[1];
+			int lmtexture = gl_state.lightmap_textures + ct;
+			if (gl_config.triplelightmap && dynamic_frame[ct])
 			{
-				lmtexture += gl_state.max_lightmaps;	// bind to dynamic lightmap
+				// bind to appropiate dynamic lightmap
+				lmtexture += gl_state.max_lightmaps * (current_copy[ct] + 1);
 			}
 			R_MBind(GL_TEXTURE1, lmtexture);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -586,7 +595,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 
 			if (LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t))
 			{
-				base = gl_lms.lightmap_buffer[0];
+				base = gl_lms.lightmap_buffer[0][0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
@@ -632,7 +641,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 							smax, tmax);
 				}
 
-				base = gl_lms.lightmap_buffer[0];
+				base = gl_lms.lightmap_buffer[0][0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
@@ -1039,10 +1048,13 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 static void
 R_RegenAllLightmaps()
 {
-	static qboolean changed_last_frame[MAX_LIGHTMAPS];
-	int i, map, smax, tmax, top, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
+	static qboolean changed_last_frame[DYNAMIC_COPIES][MAX_LIGHTMAPS];
+	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
+
+	int i, map, smax, tmax, top, cc, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
 	qboolean pixelstore_set = false;
 	msurface_t *surf;
+	lmrect_t changed;
 	byte *base;
 
 	if ( !gl_config.multitexture )
@@ -1054,22 +1066,29 @@ R_RegenAllLightmaps()
 	{
 		dynamic_frame[i] = false;
 
-		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[i] || !gl_lms.staticlm_buffer[i])
+		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[0][i])
 		{
 			continue;
 		}
 
-		// restore to static lightmap if it has been changed in the past
-		if (changed_last_frame[i])
+		if (gl_config.triplelightmap)
 		{
-			int offset = (lmchange[i].top * gl_state.block_width + lmchange[i].left) * LIGHTMAP_BYTES;
+			current_copy[i] = (current_copy[i] + 1) % DYNAMIC_COPIES;	// alternate between calls
+			cc = current_copy[i];
+			changed = lmchange[cc][i];
 
-			memcpy( gl_lms.lightmap_buffer[i] + offset, gl_lms.staticlm_buffer[i] + offset,
-				( (gl_state.block_width - lmchange[i].left) +
-				  (gl_state.block_width * (lmchange[i].bottom - lmchange[i].top - 2)) +
-				  lmchange[i].right ) * LIGHTMAP_BYTES );
+			// restore to static lightmap if it has been changed in the past
+			if (changed_last_frame[cc][i])
+			{
+				int offset = (changed.top * gl_state.block_width + changed.left) * LIGHTMAP_BYTES;
 
-			changed_last_frame[i] = false;
+				memcpy( gl_lms.lightmap_buffer[cc][i] + offset, gl_lms.lightmap_buffer[DYNAMIC_COPIES][i] + offset,
+					( (gl_state.block_width - changed.left) +
+					  (gl_state.block_width * (changed.bottom - changed.top - 2)) +
+					  changed.right ) * LIGHTMAP_BYTES );
+
+				changed_last_frame[cc][i] = false;
+			}
 		}
 
 		bt = gl_state.block_height;
@@ -1094,7 +1113,7 @@ R_RegenAllLightmaps()
 			top = surf->light_t;
 			bottom = surf->light_t + tmax;
 
-			base = gl_lms.lightmap_buffer[i];
+			base = gl_lms.lightmap_buffer[cc][i];
 			base += (top * gl_state.block_width + left) * LIGHTMAP_BYTES;
 
 			R_BuildLightMap(surf, base, gl_state.block_width * LIGHTMAP_BYTES);
@@ -1122,7 +1141,7 @@ R_RegenAllLightmaps()
 		{
 			continue;
 		}
-		changed_last_frame[i] = true;
+		changed_last_frame[cc][i] = true;
 
 		if (!pixelstore_set)
 		{
@@ -1133,24 +1152,27 @@ R_RegenAllLightmaps()
 		// Obtain the entire area to be updated in the next glTexSubImage2D
 		// Considers changes in the last frame to be reset with the static lightmap
 		// plus the new changes in this frame by dynamic lighting.
-		ut = (bt < lmchange[i].top)? bt : lmchange[i].top;
-		ub = (bb > lmchange[i].bottom)? bb : lmchange[i].bottom;
-		ul = (bl < lmchange[i].left)? bl : lmchange[i].left;
-		ur = (br > lmchange[i].right)? br : lmchange[i].right;
+		ut = (bt < changed.top)? bt : changed.top;
+		ub = (bb > changed.bottom)? bb : changed.bottom;
+		ul = (bl < changed.left)? bl : changed.left;
+		ur = (br > changed.right)? br : changed.right;
 
-		base = gl_lms.lightmap_buffer[i];
+		base = gl_lms.lightmap_buffer[cc][i];
 		base += (ut * gl_state.block_width + ul) * LIGHTMAP_BYTES;
 
 		// upload changes
-		R_Bind(gl_state.lightmap_textures + gl_state.max_lightmaps + i);
+		R_Bind(gl_state.lightmap_textures + gl_state.max_lightmaps * (cc + 1) + i);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, ul, ut, ur - ul, ub - ut,
 						GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, base);
 
-		// Changes for next frame(s)
-		lmchange[i].top = bt;
-		lmchange[i].bottom = bb;
-		lmchange[i].left = bl;
-		lmchange[i].right = br;
+		if (gl_config.triplelightmap)
+		{
+			// Changes for next frame(s)
+			lmchange[cc][i].top = bt;
+			lmchange[cc][i].bottom = bb;
+			lmchange[cc][i].left = bl;
+			lmchange[cc][i].right = br;
+		}
 	}
 
 	if (pixelstore_set)
@@ -1270,7 +1292,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 	image_t *image;
 
 	/* calculate dynamic lighting for bmodel */
-	if (!gl1_flashblend->value)
+	if (!gl_config.multitexture && !gl1_flashblend->value)
 	{
 		lt = r_newrefdef.dlights;
 

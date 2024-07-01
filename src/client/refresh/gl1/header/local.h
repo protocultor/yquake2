@@ -39,17 +39,18 @@
  #define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
 #endif
 
-#define TEXNUM_LIGHTMAPS 1024
-#define TEXNUM_SCRAPS 1280
-#define TEXNUM_IMAGES 1281
 #define MAX_GLTEXTURES 1024
+#define MAX_LIGHTMAPS 128
+#define MAX_LIGHTMAP_COPIES 3	// Meant for tile / deferred rendering platforms
 #define MAX_SCRAPS 1
+#define TEXNUM_LIGHTMAPS 1024
+#define TEXNUM_SCRAPS	MAX_LIGHTMAPS * MAX_LIGHTMAP_COPIES + TEXNUM_LIGHTMAPS
+#define TEXNUM_IMAGES	TEXNUM_SCRAPS + MAX_SCRAPS
 #define BLOCK_WIDTH 128		// default values; now defined in glstate_t
 #define BLOCK_HEIGHT 128
 #define REF_VERSION "Yamagi Quake II OpenGL Refresher"
 #define BACKFACE_EPSILON 0.01
 #define LIGHTMAP_BYTES 4
-#define MAX_LIGHTMAPS 128
 #define GL_LIGHTMAP_FORMAT GL_RGBA
 
 /* up / down */
@@ -387,13 +388,6 @@ void R_DrawParticles2(int n,
 
 typedef struct
 {
-	int top, bottom, left, right;
-} lmrect_t;
-
-extern lmrect_t lmchange[MAX_LIGHTMAPS];
-
-typedef struct
-{
 	const char *renderer_string;
 	const char *vendor_string;
 	const char *version_string;
@@ -409,6 +403,7 @@ typedef struct
 	qboolean palettedtexture;
 	qboolean pointparameters;
 	qboolean multitexture;
+	qboolean triplelightmap;	// 3 copies of the same lightmap, for tile rendering platforms
 
 	// ----
 
@@ -453,8 +448,8 @@ typedef struct
 
 	/* the lightmap texture data needs to be kept in
 	   main memory so texsubimage can update properly */
-	byte *lightmap_buffer[MAX_LIGHTMAPS];
-	byte *staticlm_buffer[MAX_LIGHTMAPS];
+	byte *lightmap_buffer[MAX_LIGHTMAP_COPIES][MAX_LIGHTMAPS];
+	// byte *staticlm_buffer[MAX_LIGHTMAPS];
 } gllightmapstate_t;
 
 extern glconfig_t gl_config;
