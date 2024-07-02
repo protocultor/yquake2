@@ -28,7 +28,7 @@
 
 #include "header/local.h"
 
-#define DYNAMIC_COPIES MAX_LIGHTMAP_COPIES - 1	// last one is the static lightmap
+#define DYNAMIC_COPIES (MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
 
 typedef struct
 {
@@ -44,7 +44,7 @@ gllightmapstate_t gl_lms;
 glbuffer_t gl_buf;
 
 static qboolean dynamic_frame[MAX_LIGHTMAPS];
-static int current_copy[DYNAMIC_COPIES];
+static int cur_lm_copy;
 
 void LM_InitBlock(void);
 void LM_UploadBlock(qboolean dynamic);
@@ -146,10 +146,10 @@ R_ApplyGLBuffer(void)
 			// We check here if it's static or dynamic
 			const int ct = gl_buf.currenttexture[1];
 			int lmtexture = gl_state.lightmap_textures + ct;
-			if (gl_config.triplelightmap && dynamic_frame[ct])
+			if (gl_config.lightmapcopies && dynamic_frame[ct])
 			{
 				// bind to appropiate dynamic lightmap
-				lmtexture += gl_state.max_lightmaps * (current_copy[ct] + 1);
+				lmtexture += gl_state.max_lightmaps * (cur_lm_copy + 1);
 			}
 			R_MBind(GL_TEXTURE1, lmtexture);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -899,7 +899,8 @@ R_HasDynamicLights(msurface_t *surf, int *mapNum)
 	}
 
 	// No matter if it is this frame or was in the previous one: has dynamic lights
-	if ( !is_dynamic && surf->dlightframe == r_framecount )
+	if ( !is_dynamic && ( surf->dlightframe == r_framecount ||
+		( surf->dirty_lightmap && !gl_config.lightmapcopies ) ) )
 	{
 		is_dynamic = true;
 	}
@@ -919,7 +920,11 @@ R_UpdateSurfCache(msurface_t *surf, int map)
 	{
 		R_SetCacheState(surf);
 	}
-	// surf->dirty_lightmap = (surf->dlightframe == r_framecount);
+
+	if (!gl_config.lightmapcopies)
+	{
+		surf->dirty_lightmap = (surf->dlightframe == r_framecount);
+	}
 }
 
 static void
@@ -1062,6 +1067,13 @@ R_RegenAllLightmaps()
 		return;
 	}
 
+	cc = 0;
+	if (gl_config.lightmapcopies)
+	{
+		cur_lm_copy = (cur_lm_copy + 1) % DYNAMIC_COPIES;	// alternate between calls
+		cc = cur_lm_copy;
+	}
+
 	for (i = 1; i < gl_state.max_lightmaps; i++)
 	{
 		dynamic_frame[i] = false;
@@ -1071,10 +1083,8 @@ R_RegenAllLightmaps()
 			continue;
 		}
 
-		if (gl_config.triplelightmap)
+		if (gl_config.lightmapcopies)
 		{
-			current_copy[i] = (current_copy[i] + LIGHTMAP_COPY_SKIP) % DYNAMIC_COPIES;	// alternate between calls
-			cc = current_copy[i];
 			changed = lmchange[cc][i];
 
 			// restore to static lightmap if it has been changed in the past
@@ -1089,10 +1099,6 @@ R_RegenAllLightmaps()
 
 				changed_last_frame[cc][i] = false;
 			}
-		}
-		else
-		{
-			cc = 0;
 		}
 
 		bt = gl_state.block_height;
@@ -1154,7 +1160,7 @@ R_RegenAllLightmaps()
 		}
 
 		// Obtain the entire area to be updated in the next glTexSubImage2D
-		if (gl_config.triplelightmap)
+		if (gl_config.lightmapcopies)
 		{
 			// Considers changes in the last frame to be reset with the static lightmap
 			// plus the new changes in this frame by dynamic lighting.
@@ -1182,7 +1188,7 @@ R_RegenAllLightmaps()
 		glTexSubImage2D(GL_TEXTURE_2D, 0, ul, ut, ur - ul, ub - ut,
 						GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, base);
 
-		if (gl_config.triplelightmap)
+		if (gl_config.lightmapcopies)
 		{
 			// Changes for next frame(s)
 			lmchange[cc][i].top = bt;

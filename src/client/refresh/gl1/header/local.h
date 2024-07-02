@@ -41,17 +41,16 @@
 
 #define MAX_GLTEXTURES 1024
 #define MAX_LIGHTMAPS 128
-#define MAX_LIGHTMAP_COPIES 10	// Meant for tile / deferred rendering platforms
+#define MAX_LIGHTMAP_COPIES 4	// Meant for tile / deferred rendering platforms
 #define MAX_SCRAPS 1
 #define TEXNUM_LIGHTMAPS 1024
-#define TEXNUM_SCRAPS	MAX_LIGHTMAPS * MAX_LIGHTMAP_COPIES + TEXNUM_LIGHTMAPS
-#define TEXNUM_IMAGES	TEXNUM_SCRAPS + MAX_SCRAPS
+#define TEXNUM_SCRAPS	(MAX_LIGHTMAPS * MAX_LIGHTMAP_COPIES + TEXNUM_LIGHTMAPS)
+#define TEXNUM_IMAGES	(TEXNUM_SCRAPS + MAX_SCRAPS)
 #define BLOCK_WIDTH 128		// default values; now defined in glstate_t
 #define BLOCK_HEIGHT 128
 #define REF_VERSION "Yamagi Quake II OpenGL Refresher"
 #define BACKFACE_EPSILON 0.01
 #define LIGHTMAP_BYTES 4
-#define LIGHTMAP_COPY_SKIP 3
 #define GL_LIGHTMAP_FORMAT GL_RGBA
 
 /* up / down */
@@ -404,7 +403,7 @@ typedef struct
 	qboolean palettedtexture;
 	qboolean pointparameters;
 	qboolean multitexture;
-	qboolean triplelightmap;	// 3 copies of the same lightmap, for tile rendering platforms
+	qboolean lightmapcopies;	// many copies of same lightmap; tile rendering platforms
 
 	// ----
 

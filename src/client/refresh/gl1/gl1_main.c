@@ -92,7 +92,7 @@ cvar_t *gl1_palettedtexture;
 cvar_t *gl1_pointparameters;
 cvar_t *gl1_multitexture;
 cvar_t *gl1_biglightmaps;
-cvar_t *gl1_triplelightmap;
+cvar_t *gl1_lightmapcopies;
 
 cvar_t *gl_drawbuffer;
 cvar_t *gl_lightmap;
@@ -1225,7 +1225,7 @@ R_Register(void)
 	gl1_pointparameters = ri.Cvar_Get("gl1_pointparameters", "1", CVAR_ARCHIVE);
 	gl1_multitexture = ri.Cvar_Get("gl1_multitexture", "1", CVAR_ARCHIVE);
 	gl1_biglightmaps = ri.Cvar_Get("gl1_biglightmaps", "1", CVAR_ARCHIVE);
-	gl1_triplelightmap = ri.Cvar_Get("gl1_triplelightmap", "1", CVAR_ARCHIVE);	// cambiar !!!
+	gl1_lightmapcopies = ri.Cvar_Get("gl1_lightmapcopies", "1", CVAR_ARCHIVE);	// cambiar !!!
 
 	gl_drawbuffer = ri.Cvar_Get("gl_drawbuffer", "GL_BACK", 0);
 	r_vsync = ri.Cvar_Get("r_vsync", "1", CVAR_ARCHIVE);
@@ -1657,18 +1657,19 @@ RI_Init(void)
 
 	// ----
 
-	/* Triple lightmap: keep 3 copies of "the same" lightmap on system and video memory.
+	/* Lightmap multicopy: keep many copies of "the same" lightmap on system and video memory.
 	 * All of them are actually different, because they are affected by different dynamic lighting,
 	 * in different frames. This is not meant for Immediate-Mode Rendering systems (desktop),
 	 * but for Tile-Based / Deferred Rendering ones (embedded / mobile), since active manipulation
 	 * of textures already being used in rendering can cause slowdown on these systems.
+	 * Needless to say, memory usage is highly increased, so watch out in low memory situations.
 	 */
 
-	R_Printf(PRINT_ALL, " - Multiple copies of same lightmap: ");
-	gl_config.triplelightmap = false;
-	if (gl1_triplelightmap->value)
+	R_Printf(PRINT_ALL, " - Lightmap multicopy: ");
+	gl_config.lightmapcopies = false;
+	if (gl1_lightmapcopies->value)
 	{
-		gl_config.triplelightmap = true;
+		gl_config.lightmapcopies = true;
 		R_Printf(PRINT_ALL, "Okay\n");
 	}
 	else

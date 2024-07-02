@@ -56,7 +56,7 @@ LM_FreeLightmapBuffers(void)
 static void
 LM_AllocLightmapBuffer(int buffer, qboolean clean)
 {
-	const int lm_amount = (gl_config.triplelightmap)? MAX_LIGHTMAP_COPIES : 1;
+	const int lm_amount = (gl_config.lightmapcopies)? MAX_LIGHTMAP_COPIES : 1;
 	const unsigned int lightmap_size =
 		gl_state.block_width * gl_state.block_height * LIGHTMAP_BYTES;
 
@@ -122,7 +122,7 @@ LM_UploadBlock(qboolean dynamic)
 				0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
 				gl_lms.lightmap_buffer[0][buffer]);
 
-		if (gl_config.triplelightmap && buffer != 0)
+		if (gl_config.lightmapcopies && buffer != 0)
 		{
 			// Upload to dynamic textures
 			for (i = 1; i < MAX_LIGHTMAP_COPIES; i++)
