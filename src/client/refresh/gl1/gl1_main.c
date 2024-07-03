@@ -91,7 +91,6 @@ cvar_t *gl1_particle_square;
 cvar_t *gl1_palettedtexture;
 cvar_t *gl1_pointparameters;
 cvar_t *gl1_multitexture;
-cvar_t *gl1_biglightmaps;
 cvar_t *gl1_lightmapcopies;
 
 cvar_t *gl_drawbuffer;
@@ -1224,8 +1223,7 @@ R_Register(void)
 	gl1_palettedtexture = ri.Cvar_Get("r_palettedtextures", "0", CVAR_ARCHIVE);
 	gl1_pointparameters = ri.Cvar_Get("gl1_pointparameters", "1", CVAR_ARCHIVE);
 	gl1_multitexture = ri.Cvar_Get("gl1_multitexture", "1", CVAR_ARCHIVE);
-	gl1_biglightmaps = ri.Cvar_Get("gl1_biglightmaps", "1", CVAR_ARCHIVE);
-	gl1_lightmapcopies = ri.Cvar_Get("gl1_lightmapcopies", "1", CVAR_ARCHIVE);	// cambiar !!!
+	gl1_lightmapcopies = ri.Cvar_Get("gl1_lightmapcopies", "0", CVAR_ARCHIVE);
 
 	gl_drawbuffer = ri.Cvar_Get("gl_drawbuffer", "GL_BACK", 0);
 	r_vsync = ri.Cvar_Get("r_vsync", "1", CVAR_ARCHIVE);
@@ -1406,7 +1404,7 @@ R_SetMode(void)
 qboolean
 RI_Init(void)
 {
-	int j, max_tex_size;
+	int j;
 	byte *colormap;
 	extern float r_turbsin[256];
 
@@ -1625,49 +1623,17 @@ RI_Init(void)
 
 	// ----
 
-	/* Big lightmaps */
-	R_Printf(PRINT_ALL, " - Big lightmaps: ");
-
-	gl_state.block_width = BLOCK_WIDTH;
-	gl_state.block_height = BLOCK_HEIGHT;
-	gl_state.max_lightmaps = MAX_LIGHTMAPS;
-	gl_state.scrap_width = BLOCK_WIDTH;
-	gl_state.scrap_height = BLOCK_HEIGHT;
-	glGetIntegerv (GL_MAX_TEXTURE_SIZE, &max_tex_size);
-	if (max_tex_size > BLOCK_WIDTH)
-	{
-		if (gl1_biglightmaps->value)
-		{
-			gl_state.block_width = gl_state.block_height = Q_min(max_tex_size, 512);
-			gl_state.max_lightmaps = (BLOCK_WIDTH * BLOCK_HEIGHT * MAX_LIGHTMAPS)
-					/ (gl_state.block_width * gl_state.block_height);
-			gl_state.scrap_width = gl_state.scrap_height =
-					(gl_config.npottextures)? Q_min(max_tex_size, 384) : Q_min(max_tex_size, 256);
-			R_Printf(PRINT_ALL, "Okay\n");
-		}
-		else
-		{
-			R_Printf(PRINT_ALL, "Disabled\n");
-		}
-	}
-	else
-	{
-		R_Printf(PRINT_ALL, "Failed, detected texture size = %d\n", max_tex_size);
-	}
-
-	// ----
-
 	/* Lightmap multicopy: keep many copies of "the same" lightmap on system and video memory.
 	 * All of them are actually different, because they are affected by different dynamic lighting,
 	 * in different frames. This is not meant for Immediate-Mode Rendering systems (desktop),
 	 * but for Tile-Based / Deferred Rendering ones (embedded / mobile), since active manipulation
-	 * of textures already being used in rendering can cause slowdown on these systems.
+	 * of textures already being used in the last few frames can cause slowdown on these systems.
 	 * Needless to say, memory usage is highly increased, so watch out in low memory situations.
 	 */
 
 	R_Printf(PRINT_ALL, " - Lightmap multicopy: ");
 	gl_config.lightmapcopies = false;
-	if (gl1_lightmapcopies->value)
+	if (gl_config.multitexture && gl1_lightmapcopies->value)
 	{
 		gl_config.lightmapcopies = true;
 		R_Printf(PRINT_ALL, "Okay\n");
@@ -1676,6 +1642,20 @@ RI_Init(void)
 	{
 		R_Printf(PRINT_ALL, "Disabled\n");
 	}
+
+	// ----
+
+	/* Big lightmaps: this used to be fast, but after the implementation of the "GL Buffer", it
+	 * became too evident that the bigger the texture, the slower the call to glTexSubImage2D() is.
+	 * Original logic remains, but it's preferable not to make it visible to the user.
+	 * Let's see if something changes in the future.
+	 */
+
+	gl_state.block_width = BLOCK_WIDTH;
+	gl_state.block_height = BLOCK_HEIGHT;
+	gl_state.max_lightmaps = MAX_LIGHTMAPS;
+	gl_state.scrap_width = BLOCK_WIDTH * 2;
+	gl_state.scrap_height = BLOCK_HEIGHT * 2;
 
 	// ----
 
