@@ -885,7 +885,7 @@ R_DrawAliasModel(entity_t *currententity, const model_t *currentmodel)
 		currententity->backlerp = 0;
 	}
 
-	R_UpdateGLBuffer(buf_alias, skin->texnum, 0, currententity->flags);
+	R_UpdateGLBuffer(buf_alias, skin->texnum, 0, currententity->flags, 1);
 	R_DrawAliasFrameLerp(currententity, paliashdr, currententity->backlerp);
 	R_ApplyGLBuffer();	// this should go away, but everything falls without it
 

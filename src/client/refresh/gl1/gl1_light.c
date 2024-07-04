@@ -132,7 +132,7 @@ R_RenderDlights(void)
 	{
 		return;
 	}
-	R_UpdateGLBuffer(buf_flash, 0, 0, 0);
+	R_UpdateGLBuffer(buf_flash, 0, 0, 0, 1);
 
 	/* because the count hasn't advanced yet for this frame */
 	r_dlightframecount = r_framecount + 1;
