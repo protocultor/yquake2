@@ -60,7 +60,7 @@ R_ApplyGLBuffer(void)
 {
 	// add properties of buffered draws here
 	GLint vtx_size;
-	qboolean mtex, alias, texture, color, alpha;
+	qboolean mtex, alias, texture, color, alpha, texenv_set;
 	float fovy, dist, intens;
 
 	if (gl_buf.vtx_ptr == 0 || gl_buf.idx_ptr == 0)
@@ -70,7 +70,7 @@ R_ApplyGLBuffer(void)
 
 	// defaults for drawing (mostly buf_singletex features)
 	vtx_size = 3;
-	mtex = alias = color = alpha = false;
+	mtex = alias = color = alpha = texenv_set = false;
 	texture = true;
 
 	// choosing features by type
@@ -145,6 +145,21 @@ R_ApplyGLBuffer(void)
 		intens = gl_state.inverse_intensity;
 		glColor4f(intens, intens, intens, gl_buf.currentalpha);
 	}
+	else if (gl_buf.flags & SURF_DRAWTURB)
+	{
+		texenv_set = true;
+		if (gl1_overbrightbits->value)
+		{
+			R_TexEnv(GL_COMBINE);
+			glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE, 1);
+		}
+		else
+		{
+			R_TexEnv(GL_MODULATE);
+			glColor4f(gl_state.inverse_intensity, gl_state.inverse_intensity,
+					  gl_state.inverse_intensity, 1.0f);
+		}
+	}
 
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glVertexPointer (vtx_size, GL_FLOAT, 0, gl_buf.vtx);
@@ -163,6 +178,13 @@ R_ApplyGLBuffer(void)
 				lmtexture += gl_state.max_lightmaps * (cur_lm_copy + 1);
 			}
 			R_MBind(GL_TEXTURE1, lmtexture);
+
+			if (gl1_overbrightbits->value)
+			{
+				R_TexEnv(GL_COMBINE);
+				glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE, gl1_overbrightbits->value);
+			}
+
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glTexCoordPointer(2, GL_FLOAT, 0, gl_buf.tex[1]);
 
@@ -198,6 +220,11 @@ R_ApplyGLBuffer(void)
 
 	glDisableClientState( GL_VERTEX_ARRAY );
 
+	if (texenv_set)
+	{
+		R_TexEnv(GL_REPLACE);
+	}
+
 	if (alias)	// turn back everything
 	{
 		if (gl_buf.flags & RF_TRANSLUCENT)
@@ -229,7 +256,7 @@ R_ApplyGLBuffer(void)
 }
 
 void
-R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int entityflags, float alpha)
+R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha)
 {
 	if (gl_buf.type != type || gl_buf.currenttexture[0] != colortex)
 	{
@@ -241,7 +268,7 @@ R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int entityfla
 		goto apply_buffer;
 	}
 
-	if (type == buf_alias && gl_buf.flags != entityflags)
+	if ((type == buf_singletex || type == buf_alias) && gl_buf.flags != flags)
 	{
 		goto apply_buffer;
 	}
@@ -258,18 +285,23 @@ apply_buffer:
 
 	gl_buf.type = type;
 	gl_buf.currenttexture[0] = colortex;
+	gl_buf.currenttexture[1] = lighttex;
+	gl_buf.flags = flags;
+	gl_buf.currentalpha = alpha;
+	/*
 	if ( gl_config.multitexture && type == buf_mtex )	// ???
 	{
 		gl_buf.currenttexture[1] = lighttex;
 	}
 	else if (type == buf_alias)
 	{
-		gl_buf.flags = entityflags;
+		gl_buf.flags = flags;
 	}
 	else if (type == buf_alpha)
 	{
 		gl_buf.currentalpha = alpha;
 	}
+	*/
 }
 
 static void
@@ -715,6 +747,7 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 		       warping surfaces.
 		    2: Overbright bits on the global scene but not on warping surfaces.
 		        They oversaturate otherwise. */
+		/*
 		if (gl1_overbrightbits->value)
 		{
 			R_TexEnv(GL_COMBINE);
@@ -726,14 +759,15 @@ R_RenderBrushPoly(entity_t *currententity, msurface_t *fa)
 			glColor4f(gl_state.inverse_intensity, gl_state.inverse_intensity,
 					  gl_state.inverse_intensity, 1.0f);
 		}
+		*/
 
 		R_EmitWaterPolys(fa);
-		R_TexEnv(GL_REPLACE);
+		// R_TexEnv(GL_REPLACE);
 
 		return;
 	}
 
-	R_TexEnv(GL_REPLACE);
+	// R_TexEnv(GL_REPLACE);
 
 	if (fa->texinfo->flags & SURF_FLOWING)
 	{
@@ -964,11 +998,13 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 	*/
 
 	// Apply overbrightbits to TMU 1 (lightmap)
+	/*
 	if (gl1_overbrightbits->value)
 	{
 		R_TexEnv(GL_COMBINE);
 		glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE, gl1_overbrightbits->value);
 	}
+	*/
 
 	c_brush_polys++;
 	v = surf->polys->verts[0];
@@ -1249,7 +1285,7 @@ R_DrawTextureChains(entity_t *currententity)
 
 			for ( ; s; s = s->texturechain)
 			{
-				R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0, 1);
+				R_UpdateGLBuffer(buf_singletex, image->texnum, 0, s->flags, 1);
 				/*
 				if (gl_state.currenttextures[gl_state.currenttmu] != image->texnum)
 				{
@@ -1306,7 +1342,7 @@ R_DrawTextureChains(entity_t *currententity)
 			{
 				if (s->flags & SURF_DRAWTURB)
 				{
-					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0, 1);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, s->flags, 1);
 					R_RenderBrushPoly(currententity, s);
 				}
 			}
@@ -1382,7 +1418,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 				else
 				{
 					R_EnableMultitexture(false);
-					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, 0, 1);
+					R_UpdateGLBuffer(buf_singletex, image->texnum, 0, psurf->flags, 1);
 					// R_Bind(image->texnum);
 					R_RenderBrushPoly(currententity, psurf);
 				}

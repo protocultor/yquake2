@@ -296,7 +296,7 @@ void R_SubdivideSurface(model_t *loadmodel, msurface_t *fa);
 void R_RotateForEntity(entity_t *e);
 void R_MarkLeaves(void);
 void R_ApplyGLBuffer(void);
-void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int entityflags, float alpha);
+void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha);
 
 extern int r_dlightframecount;
 glpoly_t *WaterWarpPolyVerts(glpoly_t *p);
