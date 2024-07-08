@@ -33,6 +33,7 @@
 typedef struct
 {
 	int top, bottom, left, right;
+	qboolean altered;
 } lmrect_t;
 
 int c_visible_lightmaps;
@@ -1105,13 +1106,12 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 static void
 R_RegenAllLightmaps()
 {
-	static qboolean changed_last_frame[DYNAMIC_COPIES][MAX_LIGHTMAPS];
 	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
 
 	int i, map, smax, tmax, top, cc, lmtex, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
 	qboolean pixelstore_set = false;
 	msurface_t *surf;
-	lmrect_t changed;
+	lmrect_t changes = {0};
 	byte *base;
 
 	if ( !gl_config.multitexture )
@@ -1137,19 +1137,19 @@ R_RegenAllLightmaps()
 
 		if (gl_config.lightmapcopies)
 		{
-			changed = lmchange[cc][i];
+			changes = lmchange[cc][i];
 
 			// restore to static lightmap if it has been changed in the past
-			if (changed_last_frame[cc][i])
+			if (changes.altered)
 			{
-				int offset = (changed.top * gl_state.block_width + changed.left) * LIGHTMAP_BYTES;
+				int offset = (changes.top * gl_state.block_width + changes.left) * LIGHTMAP_BYTES;
 
 				memcpy( gl_lms.lightmap_buffer[cc][i] + offset, gl_lms.lightmap_buffer[DYNAMIC_COPIES][i] + offset,
-					( (gl_state.block_width - changed.left) +
-					  (gl_state.block_width * (changed.bottom - changed.top - 2)) +
-					  changed.right ) * LIGHTMAP_BYTES );
+					( (gl_state.block_width - changes.left) +
+					  (gl_state.block_width * (changes.bottom - changes.top - 2)) +
+					  changes.right ) * LIGHTMAP_BYTES );
 
-				changed_last_frame[cc][i] = false;
+				lmchange[cc][i].altered = false;
 			}
 		}
 
@@ -1203,7 +1203,6 @@ R_RegenAllLightmaps()
 		{
 			continue;
 		}
-		changed_last_frame[cc][i] = true;
 
 		if (!pixelstore_set)
 		{
@@ -1216,10 +1215,10 @@ R_RegenAllLightmaps()
 		{
 			// Considers changes in the last frame to be reset with the static lightmap
 			// plus the new changes in this frame by dynamic lighting.
-			ut = (bt < changed.top)? bt : changed.top;
-			ub = (bb > changed.bottom)? bb : changed.bottom;
-			ul = (bl < changed.left)? bl : changed.left;
-			ur = (br > changed.right)? br : changed.right;
+			ut = (bt < changes.top)? bt : changes.top;
+			ub = (bb > changes.bottom)? bb : changes.bottom;
+			ul = (bl < changes.left)? bl : changes.left;
+			ur = (br > changes.right)? br : changes.right;
 
 			lmtex = gl_state.max_lightmaps * (cc + 1);
 		}
@@ -1247,6 +1246,7 @@ R_RegenAllLightmaps()
 			lmchange[cc][i].bottom = bb;
 			lmchange[cc][i].left = bl;
 			lmchange[cc][i].right = br;
+			lmchange[cc][i].altered = true;
 		}
 	}
 
