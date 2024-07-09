@@ -120,12 +120,14 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 		alpha = 1.0;
 	}
 
+	/*
 	if (currententity->flags &
 		(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE |
 		 RF_SHELL_HALF_DAM))
 	{
 		glDisable(GL_TEXTURE_2D);
 	}
+	*/
 
 	frontlerp = 1.0 - backlerp;
 
@@ -227,28 +229,50 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 
 		gl_buf.vtx_ptr += count;
 
-		do
+		if (currententity->flags &
+			(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE))
 		{
-			// texture coordinates come from the draw list
-			gl_buf.tex[0][j++] = ((float *) order)[0];
-			gl_buf.tex[0][j++] = ((float *) order)[1];
+			do
+			{
+				index_xyz = order[2];
+				order += 3;
 
-			index_xyz = order[2];
-			order += 3;
+				gl_buf.clr[k++] = shadelight[0];
+				gl_buf.clr[k++] = shadelight[1];
+				gl_buf.clr[k++] = shadelight[2];
+				gl_buf.clr[k++] = alpha;
 
-			// normals and vertexes come from the frame list
-			l = shadedots[verts[index_xyz].lightnormalindex];
-
-			gl_buf.clr[k++] = l * shadelight[0];
-			gl_buf.clr[k++] = l * shadelight[1];
-			gl_buf.clr[k++] = l * shadelight[2];
-			gl_buf.clr[k++] = alpha;
-
-			gl_buf.vtx[i++] = s_lerped[index_xyz][0];
-			gl_buf.vtx[i++] = s_lerped[index_xyz][1];
-			gl_buf.vtx[i++] = s_lerped[index_xyz][2];
+				gl_buf.vtx[i++] = s_lerped[index_xyz][0];
+				gl_buf.vtx[i++] = s_lerped[index_xyz][1];
+				gl_buf.vtx[i++] = s_lerped[index_xyz][2];
+			}
+			while (--count);
 		}
-		while (--count);
+		else
+		{
+			do
+			{
+				// texture coordinates come from the draw list
+				gl_buf.tex[0][j++] = ((float *) order)[0];
+				gl_buf.tex[0][j++] = ((float *) order)[1];
+
+				index_xyz = order[2];
+				order += 3;
+
+				// normals and vertexes come from the frame list
+				l = shadedots[verts[index_xyz].lightnormalindex];
+
+				gl_buf.clr[k++] = l * shadelight[0];
+				gl_buf.clr[k++] = l * shadelight[1];
+				gl_buf.clr[k++] = l * shadelight[2];
+				gl_buf.clr[k++] = alpha;
+
+				gl_buf.vtx[i++] = s_lerped[index_xyz][0];
+				gl_buf.vtx[i++] = s_lerped[index_xyz][1];
+				gl_buf.vtx[i++] = s_lerped[index_xyz][2];
+			}
+			while (--count);
+		}
 	}
 
 /*

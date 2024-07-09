@@ -137,6 +137,13 @@ R_ApplyGLBuffer(void)
 		{
 			glEnable(GL_BLEND);
 		}
+
+		if (gl_buf.flags & (RF_SHELL_RED | RF_SHELL_GREEN |
+			RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
+		{
+			texture = false;
+			glDisable(GL_TEXTURE_2D);
+		}
 	}
 
 	if (alpha)
@@ -175,7 +182,7 @@ R_ApplyGLBuffer(void)
 			int lmtexture = gl_state.lightmap_textures + ct;
 			if (gl_config.lightmapcopies && dynamic_frame[ct])
 			{
-				// multicopy enabled: bind appropiate dynamic lightmap
+				// Lightmap copies enabled: bind appropiate dynamic lightmap
 				lmtexture += gl_state.max_lightmaps * (cur_lm_copy + 1);
 			}
 			R_MBind(GL_TEXTURE1, lmtexture);
@@ -207,6 +214,7 @@ R_ApplyGLBuffer(void)
 		glColorPointer(4, GL_FLOAT, 0, gl_buf.clr);
 	}
 
+	// All set, we can finally draw now
 	glDrawElements(GL_TRIANGLES, gl_buf.idx_ptr, GL_UNSIGNED_SHORT, gl_buf.idx);
 
 	if (color)
@@ -228,6 +236,12 @@ R_ApplyGLBuffer(void)
 
 	if (alias)	// turn back everything
 	{
+		if (gl_buf.flags & (RF_SHELL_RED | RF_SHELL_GREEN |
+			RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM))
+		{
+			glEnable(GL_TEXTURE_2D);
+		}
+
 		if (gl_buf.flags & RF_TRANSLUCENT)
 		{
 			glDisable(GL_BLEND);
