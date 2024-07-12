@@ -230,7 +230,7 @@ extern int c_visible_textures;
 extern float r_world_matrix[16];
 
 void R_TranslatePlayerSkin(int playernum);
-void R_Bind(int texnum);
+qboolean R_Bind(int texnum);
 
 void R_TexEnv(GLenum value);
 void R_SelectTexture(GLenum);
