@@ -54,7 +54,7 @@ typedef struct	//	832k aprox.
 
 glbuffer_t gl_buf;
 
-GLuint vt, tx;	// indexes for arrays in gl_buf
+GLuint vt, tx, cl;	// indexes for arrays in gl_buf
 
 extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 
@@ -87,6 +87,10 @@ R_ApplyGLBuffer(void)
 			break;
 		case buf_alpha:
 			alpha = true;
+			break;
+		case buf_flash:
+			texture = false;
+			color = true;
 			break;
 		default:
 			break;
@@ -373,10 +377,11 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 			break;
 	}
 
-	vt = gl_buf.vtx_ptr * 3;      // vertex index for current array
-	tx = gl_buf.vtx_ptr * 2;      // texcoord index for current array
+	vt = gl_buf.vtx_ptr * 3;	// vertex index for current array
+	tx = gl_buf.vtx_ptr * 2;	// texcoord index for current array
+	cl = gl_buf.vtx_ptr * 4;	// color index for current array
 
-	// R_BufferSingle/MultiTex() must be called as many times as vertexes_num
+	// R_Buffer*Anything*() must be called as many times as vertexes_num
 	gl_buf.vtx_ptr += vertexes_num;
 }
 
@@ -409,4 +414,20 @@ R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloa
 	gl_buf.tex[1][tx]   = ls;
 	gl_buf.tex[1][tx+1] = lt;
 	tx += 2;
+}
+
+/*
+ * Add a single 3D vertex + its color components only
+ */
+void
+R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+	// vt and cl should be set before this is called, by R_BufferIndexes
+	gl_buf.vtx[vt++] = x;
+	gl_buf.vtx[vt++] = y;
+	gl_buf.vtx[vt++] = z;
+	gl_buf.clr[cl++] = r;
+	gl_buf.clr[cl++] = g;
+	gl_buf.clr[cl++] = b;
+	gl_buf.clr[cl++] = a;
 }
