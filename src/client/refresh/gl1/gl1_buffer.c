@@ -29,10 +29,6 @@
 
 #include "header/local.h"
 
-#ifndef USHRT_MAX
-#define USHRT_MAX	65535
-#endif
-
 #define MAX_VERTICES	16384
 #define MAX_INDICES		(MAX_VERTICES * 4)
 
