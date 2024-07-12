@@ -113,6 +113,7 @@ typedef enum
 	buf_singletex,
 	buf_mtex,
 	buf_alpha,
+	buf_alias,
 	buf_flash
 } buffered_draw_t;
 
@@ -301,6 +302,8 @@ void R_BufferIndexes(GLenum type, GLuint vertexes_num);
 void R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t);
 void R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt);
 void R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R_BufferSTexColor(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t,
+		GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 
 #ifdef DEBUG
 void glCheckError_(const char *file, const char *function, int line);

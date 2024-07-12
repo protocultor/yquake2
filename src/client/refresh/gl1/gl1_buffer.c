@@ -88,6 +88,9 @@ R_ApplyGLBuffer(void)
 		case buf_alpha:
 			alpha = true;
 			break;
+		case buf_alias:
+			alias = color = true;
+			break;
 		case buf_flash:
 			texture = false;
 			color = true;
@@ -283,7 +286,7 @@ R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, fl
 {
 	if ( gl_buf.type != type || gl_buf.texture[0] != colortex ||
 		(gl_config.multitexture && type == buf_mtex && gl_buf.texture[1] != lighttex) ||
-		(type == buf_singletex && gl_buf.flags != flags) ||
+		((type == buf_singletex || type == buf_alias) && gl_buf.flags != flags) ||
 		(type == buf_alpha && gl_buf.alpha != alpha) )
 	{
 		R_ApplyGLBuffer();
@@ -352,7 +355,8 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 {
 	int i;
 
-	if (gl_buf.vtx_ptr + vertexes_num >= MAX_VERTICES)
+	if ( gl_buf.vtx_ptr + vertexes_num >= MAX_VERTICES ||
+		gl_buf.idx_ptr + ( (vertexes_num - 2) * 3 ) >= MAX_INDICES )
 	{
 		R_ApplyGLBuffer();
 	}
@@ -360,20 +364,32 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 	switch (type)
 	{
 		case GL_TRIANGLE_FAN:
+			for (i = 0; i < vertexes_num-2; i++)
 			{
-				if ( gl_buf.idx_ptr + ((vertexes_num-2)*3) >= MAX_INDICES )
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+			}
+			break;
+		case GL_TRIANGLE_STRIP:
+			for (i = 0; i < vertexes_num-2; i++)
+			{
+				if (i % 2 == 0)
 				{
-					R_ApplyGLBuffer();
-				}
-				for (i=0; i < vertexes_num-2; i++)
-				{
-					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i;
 					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
 					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+				}
+				else	// backwards order
+				{
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i;
 				}
 			}
 			break;
 		default:
+			R_Printf(PRINT_DEVELOPER, "R_BufferIndexes: no such type %d\n", type);
 			break;
 	}
 
@@ -426,6 +442,24 @@ R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, 
 	gl_buf.vtx[vt++] = x;
 	gl_buf.vtx[vt++] = y;
 	gl_buf.vtx[vt++] = z;
+	gl_buf.clr[cl++] = r;
+	gl_buf.clr[cl++] = g;
+	gl_buf.clr[cl++] = b;
+	gl_buf.clr[cl++] = a;
+}
+
+/*
+ * Add a single 3D vertex, texture coords & color components
+ */
+void
+R_BufferSTexColor(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t,
+		GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+	gl_buf.vtx[vt++] = x;
+	gl_buf.vtx[vt++] = y;
+	gl_buf.vtx[vt++] = z;
+	gl_buf.tex[0][tx++] = s;
+	gl_buf.tex[0][tx++] = t;
 	gl_buf.clr[cl++] = r;
 	gl_buf.clr[cl++] = g;
 	gl_buf.clr[cl++] = b;
