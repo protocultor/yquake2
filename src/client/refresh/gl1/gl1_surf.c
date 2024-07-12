@@ -66,7 +66,7 @@ R_DrawGLPoly(msurface_t *fa)
 		scroll = 0.0;
 	}
 
-	R_BufferIndexes(GL_TRIANGLE_FAN, nv);
+	R_SetBufferIndices(GL_TRIANGLE_FAN, nv);
 
 	for ( i = 0; i < nv; i++, v += VERTEXSIZE )
 	{
@@ -618,7 +618,7 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 		scroll = 0.0;
 	}
 
-	R_BufferIndexes(GL_TRIANGLE_FAN, nv);
+	R_SetBufferIndices(GL_TRIANGLE_FAN, nv);
 
 	for (i = 0; i < nv; i++, v += VERTEXSIZE)
 	{

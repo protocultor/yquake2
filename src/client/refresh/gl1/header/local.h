@@ -295,7 +295,7 @@ void R_ApplyGLBuffer(void);
 void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha);
 void R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	GLfloat ul_tx, GLfloat ul_ty, GLfloat dr_tx, GLfloat dr_ty);
-void R_BufferIndexes(GLenum type, GLuint vertexes_num);
+void R_SetBufferIndices(GLenum type, GLuint vertices_num);
 void R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t);
 void R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt);
 void R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a);

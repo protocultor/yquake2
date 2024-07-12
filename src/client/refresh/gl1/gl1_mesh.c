@@ -154,11 +154,11 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 		if (count < 0)
 		{
 			count = -count;
-			R_BufferIndexes(GL_TRIANGLE_FAN, count);
+			R_SetBufferIndices(GL_TRIANGLE_FAN, count);
 		}
 		else
 		{
-			R_BufferIndexes(GL_TRIANGLE_STRIP, count);
+			R_SetBufferIndices(GL_TRIANGLE_STRIP, count);
 		}
 
 		if (currententity->flags &

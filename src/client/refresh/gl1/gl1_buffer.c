@@ -50,7 +50,7 @@ typedef struct	//	832k aprox.
 
 glbuffer_t gl_buf;
 
-GLuint vt, tx, cl;	// indexes for arrays in gl_buf
+GLuint vt, tx, cl;	// indices for arrays in gl_buf
 
 extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 
@@ -344,15 +344,15 @@ R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 }
 
 /*
- * Set up indexes with the proper shape for the next draw call
+ * Set up indices with the proper shape for the next buffered vertices
  */
 void
-R_BufferIndexes(GLenum type, GLuint vertexes_num)
+R_SetBufferIndices(GLenum type, GLuint vertices_num)
 {
 	int i;
 
-	if ( gl_buf.vtx_ptr + vertexes_num >= MAX_VERTICES ||
-		gl_buf.idx_ptr + ( (vertexes_num - 2) * 3 ) >= MAX_INDICES )
+	if ( gl_buf.vtx_ptr + vertices_num >= MAX_VERTICES ||
+		gl_buf.idx_ptr + ( (vertices_num - 2) * 3 ) >= MAX_INDICES )
 	{
 		R_ApplyGLBuffer();
 	}
@@ -360,7 +360,7 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 	switch (type)
 	{
 		case GL_TRIANGLE_FAN:
-			for (i = 0; i < vertexes_num-2; i++)
+			for (i = 0; i < vertices_num-2; i++)
 			{
 				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
 				gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
@@ -368,7 +368,7 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 			}
 			break;
 		case GL_TRIANGLE_STRIP:
-			for (i = 0; i < vertexes_num-2; i++)
+			for (i = 0; i < vertices_num-2; i++)
 			{
 				if (i % 2 == 0)
 				{
@@ -385,16 +385,43 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 			}
 			break;
 		default:
-			R_Printf(PRINT_DEVELOPER, "R_BufferIndexes: no such type %d\n", type);
-			break;
+			R_Printf(PRINT_DEVELOPER, "R_SetBufferIndices: no such type %d\n", type);
+			return;
 	}
 
 	vt = gl_buf.vtx_ptr * 3;	// vertex index for current array
 	tx = gl_buf.vtx_ptr * 2;	// texcoord index for current array
 	cl = gl_buf.vtx_ptr * 4;	// color index for current array
 
-	// R_Buffer*Anything*() must be called as many times as vertexes_num
-	gl_buf.vtx_ptr += vertexes_num;
+	// R_Buffer*Anything*() must be called as many times as vertices_num
+	gl_buf.vtx_ptr += vertices_num;
+}
+
+static void
+B_AddVertex(GLfloat x, GLfloat y, GLfloat z)
+{
+	// vt should be set before this is called, by R_SetBufferIndices
+	gl_buf.vtx[vt++] = x;
+	gl_buf.vtx[vt++] = y;
+	gl_buf.vtx[vt++] = z;
+}
+
+static void
+B_AddTexture(GLfloat s, GLfloat t)
+{
+	// tx should be set before this is called, by R_SetBufferIndices
+	gl_buf.tex[0][tx++] = s;
+	gl_buf.tex[0][tx++] = t;
+}
+
+static void
+B_AddColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+	// cl should be set before this is called, by R_SetBufferIndices
+	gl_buf.clr[cl++] = r;
+	gl_buf.clr[cl++] = g;
+	gl_buf.clr[cl++] = b;
+	gl_buf.clr[cl++] = a;
 }
 
 /*
@@ -403,12 +430,8 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 void
 R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t)
 {
-	// vt and tx should be set before this is called, by R_BufferIndexes
-	gl_buf.vtx[vt++] = x;
-	gl_buf.vtx[vt++] = y;
-	gl_buf.vtx[vt++] = z;
-	gl_buf.tex[0][tx++] = s;
-	gl_buf.tex[0][tx++] = t;
+	B_AddVertex(x, y, z);
+	B_AddTexture(s, t);
 }
 
 /*
@@ -417,10 +440,8 @@ R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t)
 void
 R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt)
 {
-	// vt and tx should be set before this is called, by R_BufferIndexes
-	gl_buf.vtx[vt++] = x;
-	gl_buf.vtx[vt++] = y;
-	gl_buf.vtx[vt++] = z;
+	// tx should be set before this is called, by R_SetBufferIndices
+	B_AddVertex(x, y, z);
 	gl_buf.tex[0][tx]   = cs;
 	gl_buf.tex[0][tx+1] = ct;
 	gl_buf.tex[1][tx]   = ls;
@@ -434,14 +455,9 @@ R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloa
 void
 R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 {
-	// vt and cl should be set before this is called, by R_BufferIndexes
-	gl_buf.vtx[vt++] = x;
-	gl_buf.vtx[vt++] = y;
-	gl_buf.vtx[vt++] = z;
-	gl_buf.clr[cl++] = r;
-	gl_buf.clr[cl++] = g;
-	gl_buf.clr[cl++] = b;
-	gl_buf.clr[cl++] = a;
+	// vt and cl should be set before this is called, by R_SetBufferIndices
+	B_AddVertex(x, y, z);
+	B_AddColor(r, g, b, a);
 }
 
 /*
@@ -451,13 +467,7 @@ void
 R_BufferSTexColor(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t,
 		GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 {
-	gl_buf.vtx[vt++] = x;
-	gl_buf.vtx[vt++] = y;
-	gl_buf.vtx[vt++] = z;
-	gl_buf.tex[0][tx++] = s;
-	gl_buf.tex[0][tx++] = t;
-	gl_buf.clr[cl++] = r;
-	gl_buf.clr[cl++] = g;
-	gl_buf.clr[cl++] = b;
-	gl_buf.clr[cl++] = a;
+	B_AddVertex(x, y, z);
+	B_AddTexture(s, t);
+	B_AddColor(r, g, b, a);
 }

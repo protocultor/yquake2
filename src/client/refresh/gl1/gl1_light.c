@@ -39,7 +39,7 @@ R_RenderDlight(dlight_t *light)
 	int i, j;
 	float vtx[3], a;
 
-	R_BufferIndexes(GL_TRIANGLE_FAN, 18);
+	R_SetBufferIndices(GL_TRIANGLE_FAN, 18);
 
 	for ( i = 0; i < 3; i++ )
 	{

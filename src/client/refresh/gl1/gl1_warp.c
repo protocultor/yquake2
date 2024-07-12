@@ -300,7 +300,7 @@ R_EmitWaterPolys(msurface_t *fa)
 	{
 		p = bp;
 		nv = p->numverts;
-		R_BufferIndexes(GL_TRIANGLE_FAN, nv);
+		R_SetBufferIndices(GL_TRIANGLE_FAN, nv);
 
 		for ( i = 0, v = p->verts [ 0 ]; i < nv; i++, v += VERTEXSIZE )
 		{
