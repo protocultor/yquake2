@@ -82,6 +82,9 @@ R_ApplyGLBuffer(void)
 		case buf_2d:
 			vtx_size = 2;
 			break;
+		case buf_mtex:
+			mtex = true;
+			break;
 		case buf_alpha:
 			alpha = true;
 			break;
@@ -274,7 +277,10 @@ R_ApplyGLBuffer(void)
 void
 R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha)
 {
-	if ( gl_buf.type != type || gl_buf.texture[0] != colortex )
+	if ( gl_buf.type != type || gl_buf.texture[0] != colortex ||
+		(gl_config.multitexture && type == buf_mtex && gl_buf.texture[1] != lighttex) ||
+		(type == buf_singletex && gl_buf.flags != flags) ||
+		(type == buf_alpha && gl_buf.alpha != alpha) )
 	{
 		R_ApplyGLBuffer();
 
@@ -370,7 +376,7 @@ R_BufferIndexes(GLenum type, GLuint vertexes_num)
 	vt = gl_buf.vtx_ptr * 3;      // vertex index for current array
 	tx = gl_buf.vtx_ptr * 2;      // texcoord index for current array
 
-	// Make sure to call R_BufferSingleTex as many times as vertexes_num
+	// R_BufferSingle/MultiTex() must be called as many times as vertexes_num
 	gl_buf.vtx_ptr += vertexes_num;
 }
 
@@ -386,4 +392,21 @@ R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t)
 	gl_buf.vtx[vt++] = z;
 	gl_buf.tex[0][tx++] = s;
 	gl_buf.tex[0][tx++] = t;
+}
+
+/*
+ * Add a single 3D vertex + its texture coordinates for color and lightmap
+ */
+void
+R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt)
+{
+	// vt and tx should be set before this is called, by R_BufferIndexes
+	gl_buf.vtx[vt++] = x;
+	gl_buf.vtx[vt++] = y;
+	gl_buf.vtx[vt++] = z;
+	gl_buf.tex[0][tx]   = cs;
+	gl_buf.tex[0][tx+1] = ct;
+	gl_buf.tex[1][tx]   = ls;
+	gl_buf.tex[1][tx+1] = lt;
+	tx += 2;
 }

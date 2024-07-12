@@ -601,15 +601,6 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 	float scroll;
 	float *v;
 
-	R_MBind(GL_TEXTURE1, gl_state.lightmap_textures + surf->lightmaptexturenum);
-
-	// Apply overbrightbits to TMU 1 (lightmap)
-	if (gl1_overbrightbits->value)
-	{
-		R_TexEnv(GL_COMBINE);
-		glTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE, gl1_overbrightbits->value);
-	}
-
 	c_brush_polys++;
 	v = surf->polys->verts[0];
 
@@ -621,60 +612,18 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 		{
 			scroll = -64.0;
 		}
-
-		YQ2_VLA(GLfloat, tex, 4 * nv);
-		unsigned int index_tex = 0;
-
-		for (i = 0; i < nv; i++, v += VERTEXSIZE)
-		{
-			tex[index_tex++] = v[3] + scroll;
-			tex[index_tex++] = v[4];
-			tex[index_tex++] = v[5];
-			tex[index_tex++] = v[6];
-		}
-		v = surf->polys->verts[0];
-
-		// Polygon
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, VERTEXSIZE * sizeof(GLfloat), v);
-
-		// Texture
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE0);
-		glTexCoordPointer(2, GL_FLOAT, 4 * sizeof(GLfloat), tex);
-
-		// Lightmap
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE1);
-		glTexCoordPointer(2, GL_FLOAT, 4 * sizeof(GLfloat), tex + 2);
-
-		// Draw the thing
-		glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
-
-		YQ2_VLAFREE(tex);
 	}
 	else
 	{
-		// Polygon
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(3, GL_FLOAT, VERTEXSIZE * sizeof(GLfloat), v);
-
-		// Texture
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE0);
-		glTexCoordPointer(2, GL_FLOAT, VERTEXSIZE * sizeof(GLfloat), v + 3);
-
-		// Lightmap
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglClientActiveTexture(GL_TEXTURE1);
-		glTexCoordPointer(2, GL_FLOAT, VERTEXSIZE * sizeof(GLfloat), v + 5);
-
-		// Draw it
-		glDrawArrays(GL_TRIANGLE_FAN, 0, nv);
+		scroll = 0.0;
 	}
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	R_BufferIndexes(GL_TRIANGLE_FAN, nv);
+
+	for (i = 0; i < nv; i++, v += VERTEXSIZE)
+	{
+		R_BufferMultiTex(v[0], v[1], v[2], v[3] + scroll, v[4], v[5], v[6]);
+	}
 }
 
 static void
@@ -841,13 +790,13 @@ R_DrawTextureChains(entity_t *currententity)
 				continue;
 			}
 
-			R_MBind(GL_TEXTURE0, image->texnum);	// setting it only once
 			c_visible_textures++;
 
 			for (s = image->texturechain; s; s = s->texturechain)
 			{
 				if (!(s->flags & SURF_DRAWTURB))
 				{
+					R_UpdateGLBuffer(buf_mtex, image->texnum, s->lightmaptexturenum, 0, 1);
 					R_RenderLightmappedPoly(currententity, s);
 				}
 			}
@@ -936,7 +885,7 @@ R_DrawInlineBModel(entity_t *currententity, const model_t *currentmodel)
 				{
 					R_UploadDynamicLights(psurf);
 					R_EnableMultitexture(true);
-					R_MBind(GL_TEXTURE0, image->texnum);
+					R_UpdateGLBuffer(buf_mtex, image->texnum, psurf->lightmaptexturenum, 0, 1);
 					R_RenderLightmappedPoly(currententity, psurf);
 				}
 				else
