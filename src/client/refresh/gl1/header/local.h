@@ -109,7 +109,9 @@ typedef enum
 
 typedef enum
 {
-	buf_2d
+	buf_2d,
+	buf_singletex,
+	buf_alpha
 } buffered_draw_t;
 
 #include "model.h"
@@ -293,6 +295,8 @@ void R_ApplyGLBuffer(void);
 void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha);
 void R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	GLfloat ul_tx, GLfloat ul_ty, GLfloat dr_tx, GLfloat dr_ty);
+void R_BufferIndexes(GLenum type, GLuint vertexes_num);
+void R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t);
 
 #ifdef DEBUG
 void glCheckError_(const char *file, const char *function, int line);

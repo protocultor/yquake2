@@ -54,6 +54,8 @@ typedef struct	//	832k aprox.
 
 glbuffer_t gl_buf;
 
+GLuint vt, tx;	// indexes for arrays in gl_buf
+
 extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 
 void
@@ -79,6 +81,9 @@ R_ApplyGLBuffer(void)
 	{
 		case buf_2d:
 			vtx_size = 2;
+			break;
+		case buf_alpha:
+			alpha = true;
 			break;
 		default:
 			break;
@@ -327,4 +332,58 @@ R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	gl_buf.tex[0][i+7] = dr_ty;
 
 	gl_buf.vtx_ptr += 4;
+}
+
+/*
+ * Set up indexes with the proper shape for the next draw call
+ */
+void
+R_BufferIndexes(GLenum type, GLuint vertexes_num)
+{
+	int i;
+
+	if (gl_buf.vtx_ptr + vertexes_num >= MAX_VERTICES)
+	{
+		R_ApplyGLBuffer();
+	}
+
+	switch (type)
+	{
+		case GL_TRIANGLE_FAN:
+			{
+				if ( gl_buf.idx_ptr + ((vertexes_num-2)*3) >= MAX_INDICES )
+				{
+					R_ApplyGLBuffer();
+				}
+				for (i=0; i < vertexes_num-2; i++)
+				{
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+1;
+					gl_buf.idx[gl_buf.idx_ptr++] = gl_buf.vtx_ptr+i+2;
+				}
+			}
+			break;
+		default:
+			break;
+	}
+
+	vt = gl_buf.vtx_ptr * 3;      // vertex index for current array
+	tx = gl_buf.vtx_ptr * 2;      // texcoord index for current array
+
+	// Make sure to call R_BufferSingleTex as many times as vertexes_num
+	gl_buf.vtx_ptr += vertexes_num;
+}
+
+/*
+ * Add a single 3D vertex + its texture coordinates (no lightmap coords)
+ */
+void
+R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t)
+{
+	// vt and tx should be set before this is called, by R_BufferIndexes
+	gl_buf.vtx[vt++] = x;
+	gl_buf.vtx[vt++] = y;
+	gl_buf.vtx[vt++] = z;
+	gl_buf.tex[0][tx++] = s;
+	gl_buf.tex[0][tx++] = t;
 }
