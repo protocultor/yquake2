@@ -169,9 +169,11 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 				index_xyz = order[2];
 				order += 3;
 
-				R_BufferColor(s_lerped[index_xyz][0], s_lerped[index_xyz][1],
-						s_lerped[index_xyz][2], shadelight[0], shadelight[1],
-						shadelight[2], alpha);
+				R_BufferVertex(s_lerped[index_xyz][0],
+					s_lerped[index_xyz][1], s_lerped[index_xyz][2]);
+
+				R_BufferColor(shadelight[0], shadelight[1],
+							shadelight[2], alpha);
 			}
 			while (--count);
 		}
@@ -189,9 +191,12 @@ R_DrawAliasFrameLerp(entity_t *currententity, dmdl_t *paliashdr, float backlerp)
 				// normals and vertexes come from the frame list
 				l = shadedots[verts[index_xyz].lightnormalindex];
 
-				R_BufferSTexColor(s_lerped[index_xyz][0], s_lerped[index_xyz][1],
-							s_lerped[index_xyz][2], tex[0], tex[1],
-							l * shadelight[0], l * shadelight[1],
+				R_BufferVertex(s_lerped[index_xyz][0],
+					s_lerped[index_xyz][1], s_lerped[index_xyz][2]);
+
+				R_BufferSingleTex(tex[0], tex[1]);
+
+				R_BufferColor(l * shadelight[0], l * shadelight[1],
 							l * shadelight[2], alpha);
 			}
 			while (--count);

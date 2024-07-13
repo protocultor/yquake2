@@ -295,11 +295,10 @@ void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flag
 void R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	GLfloat ul_tx, GLfloat ul_ty, GLfloat dr_tx, GLfloat dr_ty);
 void R_SetBufferIndices(GLenum type, GLuint vertices_num);
-void R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t);
-void R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt);
-void R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a);
-void R_BufferSTexColor(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t,
-		GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+void R_BufferVertex(GLfloat x, GLfloat y, GLfloat z);
+void R_BufferSingleTex(GLfloat s, GLfloat t);
+void R_BufferMultiTex(GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt);
+void R_BufferColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 
 #ifdef DEBUG
 void glCheckError_(const char *file, const char *function, int line);

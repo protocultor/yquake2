@@ -389,59 +389,43 @@ R_SetBufferIndices(GLenum type, GLuint vertices_num)
 			return;
 	}
 
-	vt = gl_buf.vtx_ptr * 3;	// vertex index for current array
-	tx = gl_buf.vtx_ptr * 2;	// texcoord index for current array
-	cl = gl_buf.vtx_ptr * 4;	// color index for current array
+	// These affect the functions that follow in this file
+	vt = gl_buf.vtx_ptr * 3;	// vertex index
+	tx = gl_buf.vtx_ptr * 2;	// texcoord index
+	cl = gl_buf.vtx_ptr * 4;	// color index
 
 	// R_Buffer*Anything*() must be called as many times as vertices_num
 	gl_buf.vtx_ptr += vertices_num;
 }
 
-static void
-B_AddVertex(GLfloat x, GLfloat y, GLfloat z)
+/*
+ * Adds a single vertex to buffer
+ */
+void
+R_BufferVertex(GLfloat x, GLfloat y, GLfloat z)
 {
-	// vt should be set before this is called, by R_SetBufferIndices
 	gl_buf.vtx[vt++] = x;
 	gl_buf.vtx[vt++] = y;
 	gl_buf.vtx[vt++] = z;
 }
 
-static void
-B_AddTexture(GLfloat s, GLfloat t)
+/*
+ * Adds texture coordinates for color texture (no lightmap coords)
+ */
+void
+R_BufferSingleTex(GLfloat s, GLfloat t)
 {
 	// tx should be set before this is called, by R_SetBufferIndices
 	gl_buf.tex[0][tx++] = s;
 	gl_buf.tex[0][tx++] = t;
 }
 
-static void
-B_AddColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
-{
-	// cl should be set before this is called, by R_SetBufferIndices
-	gl_buf.clr[cl++] = r;
-	gl_buf.clr[cl++] = g;
-	gl_buf.clr[cl++] = b;
-	gl_buf.clr[cl++] = a;
-}
-
 /*
- * Add a single 3D vertex + its texture coordinates (no lightmap coords)
+ * Adds texture coordinates for color and lightmap
  */
 void
-R_BufferSingleTex(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t)
+R_BufferMultiTex(GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt)
 {
-	B_AddVertex(x, y, z);
-	B_AddTexture(s, t);
-}
-
-/*
- * Add a single 3D vertex + its texture coordinates for color and lightmap
- */
-void
-R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt)
-{
-	// tx should be set before this is called, by R_SetBufferIndices
-	B_AddVertex(x, y, z);
 	gl_buf.tex[0][tx]   = cs;
 	gl_buf.tex[0][tx+1] = ct;
 	gl_buf.tex[1][tx]   = ls;
@@ -450,24 +434,13 @@ R_BufferMultiTex(GLfloat x, GLfloat y, GLfloat z, GLfloat cs, GLfloat ct, GLfloa
 }
 
 /*
- * Add a single 3D vertex + its color components only
+ * Adds color components of vertex
  */
 void
-R_BufferColor(GLfloat x, GLfloat y, GLfloat z, GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+R_BufferColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
 {
-	// vt and cl should be set before this is called, by R_SetBufferIndices
-	B_AddVertex(x, y, z);
-	B_AddColor(r, g, b, a);
-}
-
-/*
- * Add a single 3D vertex, texture coords & color components
- */
-void
-R_BufferSTexColor(GLfloat x, GLfloat y, GLfloat z, GLfloat s, GLfloat t,
-		GLfloat r, GLfloat g, GLfloat b, GLfloat a)
-{
-	B_AddVertex(x, y, z);
-	B_AddTexture(s, t);
-	B_AddColor(r, g, b, a);
+	gl_buf.clr[cl++] = r;
+	gl_buf.clr[cl++] = g;
+	gl_buf.clr[cl++] = b;
+	gl_buf.clr[cl++] = a;
 }

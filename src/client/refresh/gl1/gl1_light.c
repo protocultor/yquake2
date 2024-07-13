@@ -46,8 +46,9 @@ R_RenderDlight(dlight_t *light)
 		vtx [ i ] = light->origin [ i ] - vpn [ i ] * rad;
 	}
 
-	R_BufferColor(vtx[0], vtx[1], vtx[2], light->color[0] * 0.2,
-		light->color[1] * 0.2, light->color[2] * 0.2, 1);
+	R_BufferVertex( vtx[0], vtx[1], vtx[2] );
+	R_BufferColor( light->color[0] * 0.2, light->color[1] * 0.2,
+		light->color[2] * 0.2, 1 );
 
 	for ( i = 16; i >= 0; i-- )
 	{
@@ -59,7 +60,8 @@ R_RenderDlight(dlight_t *light)
 				+ vup [ j ] * sin( a ) * rad;
 		}
 
-		R_BufferColor(vtx[0], vtx[1], vtx[2], 0, 0, 0, 1);
+		R_BufferVertex( vtx[0], vtx[1], vtx[2] );
+		R_BufferColor( 0, 0, 0, 1 );
 	}
 }
 
