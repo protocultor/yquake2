@@ -88,8 +88,9 @@ R_ApplyGLBuffer(void)
 			alias = color = true;
 			break;
 		case buf_flash:
-			texture = false;
 			color = true;
+		case buf_shadow:
+			texture = false;
 			break;
 		default:
 			break;
