@@ -1123,7 +1123,7 @@ R_RegenAllLightmaps()
 	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
 
 	int i, map, smax, tmax, top, cc, lmtex, bottom, left, right, bt, bb, bl, br, ut, ub, ul, ur;
-	qboolean pixelstore_set = false;
+	// qboolean pixelstore_set = false;
 	msurface_t *surf;
 	lmrect_t changes = {0};
 	byte *base;
@@ -1218,11 +1218,13 @@ R_RegenAllLightmaps()
 			continue;
 		}
 
+		/*
 		if (!pixelstore_set)
 		{
 			glPixelStorei(GL_UNPACK_ROW_LENGTH, gl_state.block_width);
 			pixelstore_set = true;
 		}
+		*/
 
 		// Obtain the entire area to be updated in the next glTexSubImage2D
 		if (gl_config.lightmapcopies)
@@ -1246,11 +1248,13 @@ R_RegenAllLightmaps()
 		}
 
 		base = gl_lms.lightmap_buffer[cc][i];
-		base += (ut * gl_state.block_width + ul) * LIGHTMAP_BYTES;
+		// base += (ut * gl_state.block_width + ul) * LIGHTMAP_BYTES;
+		base += (ut * gl_state.block_width) * LIGHTMAP_BYTES;
 
 		// upload changes
 		R_Bind(gl_state.lightmap_textures + i + lmtex);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, ul, ut, ur - ul, ub - ut,
+		// glTexSubImage2D(GL_TEXTURE_2D, 0, ul, ut, ur - ul, ub - ut,
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, ut, gl_state.block_width, ub - ut,
 						GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, base);
 
 		if (gl_config.lightmapcopies)
@@ -1264,10 +1268,12 @@ R_RegenAllLightmaps()
 		}
 	}
 
+	/*
 	if (pixelstore_set)
 	{
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 	}
+	*/
 }
 
 static void

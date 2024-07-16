@@ -31,9 +31,21 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "../glad-gles1/include/glad/glad.h"
 #include "../../ref_shared.h"
 #include "qgl.h"
 
+// for GLES1
+#define GL_COLOR_INDEX	GL_RGBA
+#define GL_COLOR_INDEX8_EXT	GL_RGBA
+#define GL_RGBA8	GL_RGBA
+#define GL_RGB5_A1	GL_RGBA
+#define GL_RGBA4	GL_RGBA
+#define GL_RGBA2	GL_RGBA
+#define GL_RGB8	GL_RGBA
+#define GL_RGB5	GL_RGBA
+#define GL_RGB4	GL_RGBA
+#define GL_R3_G3_B2	GL_RGBA
 
 #ifndef GL_COLOR_INDEX8_EXT
  #define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
@@ -375,6 +387,11 @@ void glCheckError_(const char *file, const char *function, int line);
 #define glLoadIdentity() glLoadIdentity(); glCheckError_(__FILE__, __func__, __LINE__)
 #define glBegin(...) glBegin(__VA_ARGS__); glCheckError_(__FILE__, __func__, __LINE__)
 #define glEnd() glEnd(); glCheckError_(__FILE__, __func__, __LINE__)
+#else
+#define glPolygonMode(...)
+#define glFrustum(...) glFrustumf(__VA_ARGS__)
+#define glDepthRange(...) glDepthRangef(__VA_ARGS__)
+#define glOrtho(...) glOrthof(__VA_ARGS__)
 #endif
 
 /* GL extension emulation functions */

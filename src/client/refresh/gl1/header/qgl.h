@@ -37,7 +37,7 @@
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl.h>
 #else
-#include <GL/gl.h>
+#include <GLES/gl.h>
 #endif
 
 #ifndef APIENTRY

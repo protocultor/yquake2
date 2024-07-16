@@ -926,6 +926,7 @@ R_SetGL2D(void)
 static void
 R_RenderView(refdef_t *fd)
 {
+	/*
 	if ((gl_state.stereo_mode != STEREO_MODE_NONE) && gl_state.camera_separation) {
 
 		qboolean drawing_left_eye = gl_state.camera_separation < 0;
@@ -1033,7 +1034,7 @@ R_RenderView(refdef_t *fd)
 				break;
 		}
 	}
-
+	*/
 
 	if (r_norefresh->value)
 	{
@@ -1223,7 +1224,7 @@ R_Register(void)
 	gl1_palettedtexture = ri.Cvar_Get("r_palettedtextures", "0", CVAR_ARCHIVE);
 	gl1_pointparameters = ri.Cvar_Get("gl1_pointparameters", "1", CVAR_ARCHIVE);
 	gl1_multitexture = ri.Cvar_Get("gl1_multitexture", "1", CVAR_ARCHIVE);
-	gl1_lightmapcopies = ri.Cvar_Get("gl1_lightmapcopies", "0", CVAR_ARCHIVE);
+	gl1_lightmapcopies = ri.Cvar_Get("gl1_lightmapcopies", "1", CVAR_ARCHIVE);
 
 	gl_drawbuffer = ri.Cvar_Get("gl_drawbuffer", "GL_BACK", 0);
 	r_vsync = ri.Cvar_Get("r_vsync", "1", CVAR_ARCHIVE);
@@ -1463,6 +1464,7 @@ RI_Init(void)
 
 	sscanf(gl_config.version_string, "%d.%d", &gl_config.major_version, &gl_config.minor_version);
 
+	/*
 	if (gl_config.major_version == 1)
 	{
 		if (gl_config.minor_version < 4)
@@ -1473,6 +1475,7 @@ RI_Init(void)
 			return false;
 		}
 	}
+	*/
 
 	R_Printf(PRINT_ALL, "\n\nProbing for OpenGL extensions:\n");
 
@@ -1481,9 +1484,9 @@ RI_Init(void)
 	/* Point parameters */
 	R_Printf(PRINT_ALL, " - Point parameters: ");
 
-	if ( strstr(gl_config.extensions_string, "GL_ARB_point_parameters") ||
-		strstr(gl_config.extensions_string, "GL_EXT_point_parameters") )	// should exist for all OGL 1.4 hw...
-	{
+//	if ( strstr(gl_config.extensions_string, "GL_ARB_point_parameters") ||
+//		strstr(gl_config.extensions_string, "GL_EXT_point_parameters") )	// should exist for all OGL 1.4 hw...
+//	{
 		qglPointParameterf = (void (APIENTRY *)(GLenum, GLfloat))RI_GetProcAddress ( "glPointParameterf" );
 		qglPointParameterfv = (void (APIENTRY *)(GLenum, const GLfloat *))RI_GetProcAddress ( "glPointParameterfv" );
 
@@ -1497,7 +1500,7 @@ RI_Init(void)
 			qglPointParameterf = (void (APIENTRY *)(GLenum, GLfloat))RI_GetProcAddress ( "glPointParameterfEXT" );
 			qglPointParameterfv = (void (APIENTRY *)(GLenum, const GLfloat *))RI_GetProcAddress ( "glPointParameterfvEXT" );
 		}
-	}
+//	}
 
 	gl_config.pointparameters = false;
 
@@ -1571,10 +1574,13 @@ RI_Init(void)
 
 	// ----
 
+// #define GLEXTENSION_NPOT	"GL_ARB_texture_non_power_of_two"
+#define GLEXTENSION_NPOT	"GL_OES_texture_npot"
+
 	/* Non power of two textures */
 	R_Printf(PRINT_ALL, " - Non power of two textures: ");
 
-	if (strstr(gl_config.extensions_string, "GL_ARB_texture_non_power_of_two"))
+	if (strstr(gl_config.extensions_string, GLEXTENSION_NPOT))
 	{
 		gl_config.npottextures = true;
 		R_Printf(PRINT_ALL, "Okay\n");
@@ -1585,6 +1591,8 @@ RI_Init(void)
 		R_Printf(PRINT_ALL, "Failed\n");
 	}
 
+#undef GLEXTENSION_NPOT
+
 	// ----
 
 	/* Multitexturing */
@@ -1592,8 +1600,8 @@ RI_Init(void)
 
 	R_Printf(PRINT_ALL, " - Multitexturing: ");
 
-	if (strstr(gl_config.extensions_string, "GL_ARB_multitexture"))
-	{
+//	if (strstr(gl_config.extensions_string, "GL_ARB_multitexture"))
+//	{
 		qglActiveTexture = (void (APIENTRY *)(GLenum))RI_GetProcAddress ("glActiveTexture");
 		qglClientActiveTexture = (void (APIENTRY *)(GLenum))RI_GetProcAddress ("glClientActiveTexture");
 
@@ -1602,7 +1610,7 @@ RI_Init(void)
 			qglActiveTexture = (void (APIENTRY *)(GLenum))RI_GetProcAddress ("glActiveTextureARB");
 			qglClientActiveTexture = (void (APIENTRY *)(GLenum))RI_GetProcAddress ("glClientActiveTextureARB");
 		}
-	}
+//	}
 
 	if (gl1_multitexture->value)
 	{
@@ -1803,6 +1811,7 @@ RI_BeginFrame(float camera_separation)
 	}
 
 	/* draw buffer stuff */
+	/*
 	if (gl_drawbuffer->modified)
 	{
 		gl_drawbuffer->modified = false;
@@ -1819,6 +1828,7 @@ RI_BeginFrame(float camera_separation)
 			}
 		}
 	}
+	*/
 
 	/* texturemode stuff */
 	if (gl_texturemode->modified || (gl_config.anisotropic && gl_anisotropic->modified)

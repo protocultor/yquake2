@@ -47,7 +47,7 @@ qboolean R_Upload32(unsigned *data, int width, int height, qboolean mipmap);
 int gl_solid_format = GL_RGB;
 int gl_alpha_format = GL_RGBA;
 
-int gl_tex_solid_format = GL_RGB;
+int gl_tex_solid_format = GL_RGBA;
 int gl_tex_alpha_format = GL_RGBA;
 
 int gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
@@ -88,7 +88,8 @@ gltmode_t gl_alpha_modes[] = {
 #define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
 
 gltmode_t gl_solid_modes[] = {
-	{"default", GL_RGB},
+	{"default", GL_RGBA},
+	{"GL_RGBA", GL_RGBA},
 	{"GL_RGB", GL_RGB},
 	{"GL_RGB8", GL_RGB8},
 	{"GL_RGB5", GL_RGB5},

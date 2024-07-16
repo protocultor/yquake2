@@ -585,6 +585,7 @@ ref_gl1:
 	@echo "===> Building ref_gl1.dll"
 	$(MAKE) release/ref_gl1.dll
 
+release/ref_gl1.dll : GLAD_INCLUDE = -Isrc/client/refresh/gl1/glad-gles1/include
 release/ref_gl1.dll : LDFLAGS += -shared
 release/ref_gl1.dll : LDLIBS += -lopengl32
 
@@ -595,6 +596,7 @@ ref_gl1:
 	$(MAKE) release/ref_gl1.dylib
 
 
+release/ref_gl1.dylib : GLAD_INCLUDE = -Isrc/client/refresh/gl1/glad-gles1/include
 release/ref_gl1.dylib : LDFLAGS += -shared -framework OpenGL
 
 else # not Windows or Darwin
@@ -604,6 +606,7 @@ ref_gl1:
 	$(MAKE) release/ref_gl1.so
 
 
+release/ref_gl1.so : GLAD_INCLUDE = -Isrc/client/refresh/gl1/glad-gles1/include
 release/ref_gl1.so : CFLAGS += -fPIC
 release/ref_gl1.so : LDFLAGS += -shared
 release/ref_gl1.so : LDLIBS += -lGL
@@ -613,7 +616,7 @@ endif # OS specific ref_gl1 stuff
 build/ref_gl1/%.o: %.c
 	@echo "===> CC $<"
 	${Q}mkdir -p $(@D)
-	${Q}$(CC) -c $(CFLAGS) $(SDLCFLAGS) $(INCLUDE) -o $@ $<
+	${Q}$(CC) -c $(CFLAGS) $(SDLCFLAGS) $(INCLUDE) $(GLAD_INCLUDE) -o $@ $<
 
 # ----------
 
@@ -971,6 +974,9 @@ REFGL1_OBJS_ += \
 	src/backends/unix/shared/hunk.o
 endif
 
+REFGL1_OBJS_GLADEES_ := \
+	src/client/refresh/gl1/glad-gles1/src/glad.o
+
 # ----------
 
 REFGL3_OBJS_ := \
@@ -1104,6 +1110,7 @@ endif
 # Rewrite paths to our object directory.
 CLIENT_OBJS = $(patsubst %,build/client/%,$(CLIENT_OBJS_))
 REFGL1_OBJS = $(patsubst %,build/ref_gl1/%,$(REFGL1_OBJS_))
+REFGL1_OBJS += $(patsubst %,build/ref_gl1/%,$(REFGL1_OBJS_GLADEES_))
 REFGL3_OBJS = $(patsubst %,build/ref_gl3/%,$(REFGL3_OBJS_))
 REFGL3_OBJS += $(patsubst %,build/ref_gl3/%,$(REFGL3_OBJS_GLADE_))
 REFGLES3_OBJS = $(patsubst %,build/ref_gles3/%,$(REFGL3_OBJS_))
