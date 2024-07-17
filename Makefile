@@ -401,8 +401,13 @@ endif
 
 # ----------
 
-# Builds everything
-all: config client server game ref_gl1 ref_gles1 ref_gl3 ref_gles3 ref_soft
+# Builds everything but the GLES1 renderer
+all: config client server game ref_gl1 ref_gl3 ref_gles3 ref_soft
+
+# ----------
+
+# Builds everything + the GLES1 renderer
+with_gles1: all ref_gles1
 
 # ----------
 
