@@ -47,8 +47,16 @@ qboolean R_Upload32(unsigned *data, int width, int height, qboolean mipmap);
 int gl_solid_format = GL_RGB;
 int gl_alpha_format = GL_RGBA;
 
-int gl_tex_solid_format = GL_RGB;
+#ifdef YQ2_GL1_GLES
+#define DEFAULT_SOLID_FORMAT GL_RGBA
+#else
+#define DEFAULT_SOLID_FORMAT GL_RGB
+#endif
+
+int gl_tex_solid_format = DEFAULT_SOLID_FORMAT;
 int gl_tex_alpha_format = GL_RGBA;
+
+#undef DEFAULT_SOLID_FORMAT
 
 int gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 int gl_filter_max = GL_LINEAR;
@@ -69,6 +77,8 @@ glmode_t modes[] = {
 };
 
 #define NUM_GL_MODES (sizeof(modes) / sizeof(glmode_t))
+
+#ifndef YQ2_GL1_GLES
 
 typedef struct
 {
@@ -97,6 +107,8 @@ gltmode_t gl_solid_modes[] = {
 };
 
 #define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
+
+#endif
 
 typedef struct
 {
@@ -336,6 +348,7 @@ R_TextureMode(char *string)
 	}
 }
 
+#ifndef YQ2_GL1_GLES
 void
 R_TextureAlphaMode(char *string)
 {
@@ -379,6 +392,7 @@ R_TextureSolidMode(char *string)
 
 	gl_tex_solid_format = gl_solid_modes[i].mode;
 }
+#endif
 
 void
 R_ImageList_f(void)

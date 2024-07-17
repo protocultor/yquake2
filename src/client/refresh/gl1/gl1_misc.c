@@ -187,8 +187,10 @@ R_SetDefaultState(void)
 	glShadeModel(GL_FLAT);
 
 	R_TextureMode(gl_texturemode->string);
+#ifndef YQ2_GL1_GLES
 	R_TextureAlphaMode(gl1_texturealphamode->string);
 	R_TextureSolidMode(gl1_texturesolidmode->string);
+#endif
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
