@@ -31,11 +31,14 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifdef YQ2_GL1_GLES
+#include "../glad-gles1/include/glad/glad.h"
+#endif
+
 #include "../../ref_shared.h"
 #include "qgl.h"
 
 #ifdef YQ2_GL1_GLES
-#include "../glad-gles1/include/glad/glad.h"
 #define REF_VERSION "Yamagi Quake II OpenGL ES1 Refresher"
 #define GL_COLOR_INDEX	GL_RGBA
 #define GL_COLOR_INDEX8_EXT	GL_RGBA
