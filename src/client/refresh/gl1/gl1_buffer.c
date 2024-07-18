@@ -54,6 +54,9 @@ glbuffer_t gl_buf;
 
 GLuint vt, tx, cl;	// indices for arrays in gl_buf
 
+qboolean dynamic_frame[MAX_LIGHTMAPS];	// is the lightmap affected by dynlights this frame
+int cur_lm_copy;		// which lightmap copy to use (when lightmapcopies=on)
+
 extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 
 void
@@ -194,7 +197,15 @@ R_ApplyGLBuffer(void)
 		if (mtex)
 		{
 			// TMU 1: Lightmap texture
-			R_MBind(GL_TEXTURE1, gl_state.lightmap_textures + gl_buf.texture[1]);
+			// Lightmap copies: we check here if it's static or dynamic
+			const int ct = gl_buf.texture[1];
+			int lmtexture = gl_state.lightmap_textures + ct;
+			if (gl_config.lightmapcopies && dynamic_frame[ct])
+			{
+				// Bind appropiate dynamic lightmap
+				lmtexture += gl_state.max_lightmaps * (cur_lm_copy + 1);
+			}
+			R_MBind(GL_TEXTURE1, lmtexture);
 
 			if (gl1_overbrightbits->value)
 			{

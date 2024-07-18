@@ -34,13 +34,16 @@ void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 void
 LM_FreeLightmapBuffers(void)
 {
-	for (int i=0; i<MAX_LIGHTMAPS; i++)
+	for (int i = 0; i < MAX_LIGHTMAP_COPIES; i++)
 	{
-		if (gl_lms.lightmap_buffer[i])
+		for (int k = 0; k < MAX_LIGHTMAPS; k++)
 		{
-			free(gl_lms.lightmap_buffer[i]);
+			if (gl_lms.lightmap_buffer[i][k])
+			{
+				free(gl_lms.lightmap_buffer[i][k]);
+			}
+			gl_lms.lightmap_buffer[i][k] = NULL;
 		}
-		gl_lms.lightmap_buffer[i] = NULL;
 	}
 
 	if (gl_lms.allocated)
@@ -53,21 +56,25 @@ LM_FreeLightmapBuffers(void)
 static void
 LM_AllocLightmapBuffer(int buffer, qboolean clean)
 {
+	const int lm_amount = (gl_config.lightmapcopies)? MAX_LIGHTMAP_COPIES : 1;
 	const unsigned int lightmap_size =
 		gl_state.block_width * gl_state.block_height * LIGHTMAP_BYTES;
 
-	if (!gl_lms.lightmap_buffer[buffer])
+	for (int i = 0; i < lm_amount; i++)
 	{
-		gl_lms.lightmap_buffer[buffer] = malloc (lightmap_size);
-	}
-	if (!gl_lms.lightmap_buffer[buffer])
-	{
-		ri.Sys_Error(ERR_FATAL, "Could not allocate lightmap buffer %d\n",
-			buffer);
-	}
-	if (clean)
-	{
-		memset (gl_lms.lightmap_buffer[buffer], 0, lightmap_size);
+		if (!gl_lms.lightmap_buffer[i][buffer])
+		{
+			gl_lms.lightmap_buffer[i][buffer] = malloc(lightmap_size);
+		}
+		if (!gl_lms.lightmap_buffer[i][buffer])
+		{
+			ri.Sys_Error(ERR_FATAL, "Could not allocate lightmap buffer %d\n",
+						 buffer);
+		}
+		if (clean)
+		{
+			memset(gl_lms.lightmap_buffer[i][buffer], 0, lightmap_size);
+		}
 	}
 }
 
@@ -87,7 +94,7 @@ LM_UploadBlock(qboolean dynamic)
 {
 	const int texture = (dynamic)? 0 : gl_lms.current_lightmap_texture;
 	const int buffer = (gl_config.multitexture)? gl_lms.current_lightmap_texture : 0;
-	int height = 0;
+	int height = 0, i;
 
 	R_Bind(gl_state.lightmap_textures + texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -107,7 +114,7 @@ LM_UploadBlock(qboolean dynamic)
 
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, gl_state.block_width,
 				height, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
-				gl_lms.lightmap_buffer[buffer]);
+				gl_lms.lightmap_buffer[0][buffer]);
 	}
 	else
 	{
@@ -115,7 +122,28 @@ LM_UploadBlock(qboolean dynamic)
 		glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
 				gl_state.block_width, gl_state.block_height,
 				0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
-				gl_lms.lightmap_buffer[buffer]);
+				gl_lms.lightmap_buffer[0][buffer]);
+
+		if (gl_config.lightmapcopies && buffer != 0)
+		{
+			// Upload to dynamic textures
+			for (i = 1; i < MAX_LIGHTMAP_COPIES; i++)
+			{
+				R_Bind(gl_state.lightmap_textures + (gl_state.max_lightmaps * i) + texture);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
+					gl_state.block_width, gl_state.block_height,
+					0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
+					gl_lms.lightmap_buffer[0][buffer]);
+
+				// Since lightmap_buffer will be constantly altered by dynamic lights, one of
+				// these has to be an unaltered copy (the last one). At least it's better than
+				// regenerating it every single time we need it.
+				memcpy(gl_lms.lightmap_buffer[i][buffer], gl_lms.lightmap_buffer[0][buffer],
+					gl_state.block_width * gl_state.block_height * LIGHTMAP_BYTES);
+			}
+		}
 
 		if (++gl_lms.current_lightmap_texture == gl_state.max_lightmaps)
 		{
@@ -271,7 +299,7 @@ LM_CreateSurfaceLightmap(msurface_t *surf)
 	surf->lightmaptexturenum = gl_lms.current_lightmap_texture;
 	buffer = (gl_config.multitexture)? surf->lightmaptexturenum : 0;
 
-	base = gl_lms.lightmap_buffer[buffer];
+	base = gl_lms.lightmap_buffer[0][buffer];
 	base += (surf->light_t * gl_state.block_width + surf->light_s) * LIGHTMAP_BYTES;
 
 	R_SetCacheState(surf);
@@ -331,7 +359,7 @@ LM_BeginBuildingLightmaps(model_t *m)
 	glTexImage2D(GL_TEXTURE_2D, 0, gl_lms.internal_format,
 			gl_state.block_width, gl_state.block_height,
 			0, GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE,
-			gl_lms.lightmap_buffer[0]);
+			gl_lms.lightmap_buffer[0][0]);
 }
 
 void
@@ -339,4 +367,3 @@ LM_EndBuildingLightmaps(void)
 {
 	LM_UploadBlock(false);
 }
-

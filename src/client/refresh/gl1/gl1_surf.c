@@ -297,7 +297,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 
 			if (LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t))
 			{
-				base = gl_lms.lightmap_buffer[0];
+				base = gl_lms.lightmap_buffer[0][0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
@@ -343,7 +343,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 							smax, tmax);
 				}
 
-				base = gl_lms.lightmap_buffer[0];
+				base = gl_lms.lightmap_buffer[0][0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
@@ -601,6 +601,28 @@ R_RenderLightmappedPoly(entity_t *currententity, msurface_t *surf)
 
 /* Helper functions for R_RegenAllLightmaps() */
 
+extern qboolean dynamic_frame[MAX_LIGHTMAPS];
+extern int cur_lm_copy;
+
+#define DYNAMIC_COPIES (MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
+
+typedef struct
+{
+	int top, bottom, left, right;
+	qboolean altered;
+} lmrect_t;
+
+static lmrect_t
+R_JoinAreas(lmrect_t first, lmrect_t second)
+{
+	lmrect_t result;
+	result.top = (first.top < second.top)? first.top : second.top;
+	result.bottom = (first.bottom > second.bottom)? first.bottom : second.bottom;
+	result.left = (first.left < second.left)? first.left : second.left;
+	result.right = (first.right > second.right)? first.right : second.right;
+	return result;
+}
+
 #ifdef YQ2_GL1_GLES
 
 static void
@@ -610,9 +632,10 @@ R_PixelStoreWrapper(int unpack_len)
 }
 
 static void
-R_SubImageWrapper(int top, int bottom, int left, int right, void *pixels)
+R_SubImageWrapper(lmrect_t area, void *pixels)
 {
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, top, gl_state.block_width, bottom - top,
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, area.top,
+			gl_state.block_width, area.bottom - area.top,
 			GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, pixels);
 }
 
@@ -631,9 +654,10 @@ R_PixelStoreWrapper(int unpack_len)
 }
 
 static void
-R_SubImageWrapper(int top, int bottom, int left, int right, void *pixels)
+R_SubImageWrapper(lmrect_t area, void *pixels)
 {
-	glTexSubImage2D(GL_TEXTURE_2D, 0, left, top, right - left, bottom - top,
+	glTexSubImage2D(GL_TEXTURE_2D, 0, area.left, area.top,
+			area.right - area.left, area.bottom - area.top,
 			GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, pixels);
 }
 
@@ -649,8 +673,11 @@ R_LightmapOffset(int top, int left)
 static void
 R_RegenAllLightmaps()
 {
-	int i, map, smax, tmax, top, bottom, left, right, bt, bb, bl, br;
-	qboolean affected_lightmap, pixelstore_set = false;
+	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
+
+	int i, map, smax, tmax, cc, lmtex;
+	qboolean pixelstore_set = false;
+	lmrect_t changed = {0}, current, best, upload;
 	msurface_t *surf;
 	byte *base;
 
@@ -659,17 +686,44 @@ R_RegenAllLightmaps()
 		return;
 	}
 
+	cc = 0;
+	if (gl_config.lightmapcopies)
+	{
+		cur_lm_copy = (cur_lm_copy + 1) % DYNAMIC_COPIES;	// alternate between calls
+		cc = cur_lm_copy;
+	}
+
 	for (i = 1; i < gl_state.max_lightmaps; i++)
 	{
-		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[i])
+		dynamic_frame[i] = false;
+
+		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[0][i])
 		{
 			continue;
 		}
 
-		affected_lightmap = false;
-		bt = gl_state.block_height;
-		bl = gl_state.block_width;
-		bb = br = 0;
+		if (gl_config.lightmapcopies)
+		{
+			changed = lmchange[cc][i];
+
+			// restore to static lightmap if it has been changed in the past
+			if (changed.altered)
+			{
+				int offset = (changed.top * gl_state.block_width + changed.left) * LIGHTMAP_BYTES;
+
+				memcpy( gl_lms.lightmap_buffer[cc][i] + offset,
+					gl_lms.lightmap_buffer[DYNAMIC_COPIES][i] + offset,
+					( (gl_state.block_width - changed.left) +
+					  (gl_state.block_width * (changed.bottom - changed.top - 2)) +
+					  changed.right ) * LIGHTMAP_BYTES );
+
+				lmchange[cc][i].altered = false;
+			}
+		}
+
+		best.top = gl_state.block_height;
+		best.left = gl_state.block_width;
+		best.bottom = best.right = 0;
 
 		for (surf = gl_lms.lightmap_surfaces[i];
 			 surf != 0;
@@ -680,40 +734,25 @@ R_RegenAllLightmaps()
 				continue;
 			}
 
-			affected_lightmap = true;
+			dynamic_frame[i] = true;
 			smax = (surf->extents[0] >> 4) + 1;
 			tmax = (surf->extents[1] >> 4) + 1;
 
-			left = surf->light_s;
-			right = surf->light_s + smax;
-			top = surf->light_t;
-			bottom = surf->light_t + tmax;
+			current.left = surf->light_s;
+			current.right = surf->light_s + smax;
+			current.top = surf->light_t;
+			current.bottom = surf->light_t + tmax;
 
-			base = gl_lms.lightmap_buffer[i];
-			base += (top * gl_state.block_width + left) * LIGHTMAP_BYTES;
+			base = gl_lms.lightmap_buffer[cc][i];
+			base += (current.top * gl_state.block_width + current.left) * LIGHTMAP_BYTES;
 
 			R_BuildLightMap(surf, base, gl_state.block_width * LIGHTMAP_BYTES);
 			R_UpdateSurfCache(surf, map);
 
-			if (left < bl)
-			{
-				bl = left;
-			}
-			if (right > br)
-			{
-				br = right;
-			}
-			if (top < bt)
-			{
-				bt = top;
-			}
-			if (bottom > bb)
-			{
-				bb = bottom;
-			}
+			best = R_JoinAreas(current, best);
 		}
 
-		if (!affected_lightmap)
+		if (!dynamic_frame[i])
 		{
 			continue;
 		}
@@ -724,12 +763,33 @@ R_RegenAllLightmaps()
 			pixelstore_set = true;
 		}
 
-		base = gl_lms.lightmap_buffer[i];
-		base += R_LightmapOffset(bt, bl) * LIGHTMAP_BYTES;
+		// Obtain the entire area to be updated in the next glTexSubImage2D
+		if (gl_config.lightmapcopies)
+		{
+			// Considers changes in the last frame to be reset with the static lightmap
+			// plus the new changes in this frame by dynamic lighting.
+			upload = R_JoinAreas(best, changed);
+			lmtex = gl_state.max_lightmaps * (cc + 1);
+		}
+		else
+		{
+			upload = best;
+			lmtex = 0;
+		}
+
+		base = gl_lms.lightmap_buffer[cc][i];
+		base += R_LightmapOffset(upload.top, upload.left) * LIGHTMAP_BYTES;
 
 		// upload changes
-		R_Bind(gl_state.lightmap_textures + i);
-		R_SubImageWrapper(bt, bb, bl, br, base);
+		R_Bind(gl_state.lightmap_textures + i + lmtex);
+		R_SubImageWrapper(upload, base);
+
+		if (gl_config.lightmapcopies)
+		{
+			// Changes for next frame(s)
+			lmchange[cc][i] = best;
+			lmchange[cc][i].altered = true;
+		}
 	}
 
 	if (pixelstore_set)
@@ -737,6 +797,8 @@ R_RegenAllLightmaps()
 		R_PixelStoreWrapper(0);
 	}
 }
+
+#undef DYNAMIC_COPIES
 
 static void
 R_DrawTextureChains(entity_t *currententity)
