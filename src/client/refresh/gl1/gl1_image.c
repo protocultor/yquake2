@@ -78,13 +78,25 @@ glmode_t modes[] = {
 
 #define NUM_GL_MODES (sizeof(modes) / sizeof(glmode_t))
 
-#ifndef YQ2_GL1_GLES
-
 typedef struct
 {
 	char *name;
 	int mode;
 } gltmode_t;
+
+#ifdef YQ2_GL1_GLES
+
+gltmode_t gl_alpha_modes[] = {
+	{"default", GL_RGBA},
+	{"GL_RGBA", GL_RGBA},
+};
+
+gltmode_t gl_solid_modes[] = {
+	{"default", GL_RGBA},
+	{"GL_RGBA", GL_RGBA},
+};
+
+#else
 
 gltmode_t gl_alpha_modes[] = {
 	{"default", GL_RGBA},
@@ -95,8 +107,6 @@ gltmode_t gl_alpha_modes[] = {
 	{"GL_RGBA2", GL_RGBA2},
 };
 
-#define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
-
 gltmode_t gl_solid_modes[] = {
 	{"default", GL_RGB},
 	{"GL_RGB", GL_RGB},
@@ -106,9 +116,10 @@ gltmode_t gl_solid_modes[] = {
 	{"GL_R3_G3_B2", GL_R3_G3_B2},
 };
 
-#define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
-
 #endif
+
+#define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof(gltmode_t))
+#define NUM_GL_SOLID_MODES (sizeof(gl_solid_modes) / sizeof(gltmode_t))
 
 typedef struct
 {
@@ -348,7 +359,6 @@ R_TextureMode(char *string)
 	}
 }
 
-#ifndef YQ2_GL1_GLES
 void
 R_TextureAlphaMode(char *string)
 {
@@ -392,7 +402,6 @@ R_TextureSolidMode(char *string)
 
 	gl_tex_solid_format = gl_solid_modes[i].mode;
 }
-#endif
 
 void
 R_ImageList_f(void)

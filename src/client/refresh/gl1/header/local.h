@@ -296,10 +296,8 @@ void R_ShutdownImages(void);
 void R_FreeUnusedImages(void);
 qboolean R_ImageHasFreeSpace(void);
 
-#ifndef YQ2_GL1_GLES
 void R_TextureAlphaMode(char *string);
 void R_TextureSolidMode(char *string);
-#endif
 
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 

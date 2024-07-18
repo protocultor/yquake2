@@ -1813,18 +1813,6 @@ RI_BeginFrame(float camera_separation)
 			}
 		}
 	}
-
-	if (gl1_texturealphamode->modified)
-	{
-		R_TextureAlphaMode(gl1_texturealphamode->string);
-		gl1_texturealphamode->modified = false;
-	}
-
-	if (gl1_texturesolidmode->modified)
-	{
-		R_TextureSolidMode(gl1_texturesolidmode->string);
-		gl1_texturesolidmode->modified = false;
-	}
 #endif
 
 	/* texturemode stuff */
@@ -1839,6 +1827,18 @@ RI_BeginFrame(float camera_separation)
 		r_lerp_list->modified = false;
 		r_2D_unfiltered->modified = false;
 		r_videos_unfiltered->modified = false;
+	}
+
+	if (gl1_texturealphamode->modified)
+	{
+		R_TextureAlphaMode(gl1_texturealphamode->string);
+		gl1_texturealphamode->modified = false;
+	}
+
+	if (gl1_texturesolidmode->modified)
+	{
+		R_TextureSolidMode(gl1_texturesolidmode->string);
+		gl1_texturesolidmode->modified = false;
 	}
 
 	if (r_vsync->modified)
