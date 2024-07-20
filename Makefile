@@ -155,7 +155,7 @@ ifdef UBSAN
 override CFLAGS += -fsanitize=undefined -DUSE_SANITIZER
 endif
 else
-CFLAGS ?= -O2 -Wall -pipe -fomit-frame-pointer
+CFLAGS ?= -flto=auto -O2 -Wall -pipe -fomit-frame-pointer
 endif
 
 # Always needed are:
@@ -356,7 +356,7 @@ ifndef ASAN
 ifndef UBSAN
 ifneq ($(YQ2_OSTYPE), Darwin)
 ifneq ($(YQ2_OSTYPE), OpenBSD)
-override LDFLAGS += -Wl,--no-undefined
+override LDFLAGS += -flto=auto -Wl,--no-undefined
 endif
 endif
 endif
