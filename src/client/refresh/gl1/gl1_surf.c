@@ -33,6 +33,7 @@ int c_visible_textures;
 static vec3_t modelorg; /* relative to viewpoint */
 msurface_t *r_alpha_surfaces;
 
+glbuffer_t gl_buf;
 gllightmapstate_t gl_lms;
 
 void LM_InitBlock(void);

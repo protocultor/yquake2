@@ -63,6 +63,10 @@
 #define MAX_TEXTURE_UNITS 2
 #define GL_LIGHTMAP_FORMAT GL_RGBA
 
+// GL1's (software) buffer definitions
+#define MAX_VERTICES	16384
+#define MAX_INDICES 	(MAX_VERTICES * 4)
+
 /* up / down */
 #define PITCH 0
 
@@ -128,10 +132,29 @@ typedef enum
 	buf_shadow
 } buffered_draw_t;
 
+typedef struct	//	832k aprox.
+{
+	buffered_draw_t	type;
+
+	GLfloat
+		vtx[MAX_VERTICES * 3],	// vertexes
+		tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2],	// texture coords
+		clr[MAX_VERTICES * 4];	// color components
+
+	GLushort idx[MAX_INDICES];	// indices for the draw call
+
+	GLuint vt, tx, cl;	// indices for GLfloat arrays above
+
+	int	texture[MAX_TEXTURE_UNITS];
+	int	flags;	// entity flags
+	float	alpha;
+} glbuffer_t;
+
 #include "model.h"
 
 void R_SetDefaultState(void);
 
+extern glbuffer_t gl_buf;
 extern float gldepthmin, gldepthmax;
 
 extern image_t gltextures[MAX_GLTEXTURES];
