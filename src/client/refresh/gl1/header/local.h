@@ -325,15 +325,28 @@ void R_TextureSolidMode(char *string);
 
 int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
+// GL (software) buffer operations
+
+#define GLBUFFER_VERTEX(X, Y, Z) \
+	gl_buf.vtx[gl_buf.vt] = X; gl_buf.vtx[gl_buf.vt+1] = Y; \
+	gl_buf.vtx[gl_buf.vt+2] = Z; gl_buf.vt += 3;
+
+#define GLBUFFER_SINGLETEX(S, T) \
+	gl_buf.tex[0][gl_buf.tx] = S; gl_buf.tex[0][gl_buf.tx+1] = T; gl_buf.tx += 2;
+
+#define GLBUFFER_MULTITEX(CS, CT, LS, LT) \
+	gl_buf.tex[0][gl_buf.tx] = CS; gl_buf.tex[0][gl_buf.tx+1] = CT; \
+	gl_buf.tex[1][gl_buf.tx] = LS; gl_buf.tex[1][gl_buf.tx+1] = LT; gl_buf.tx += 2;
+
+#define GLBUFFER_COLOR(R, G, B, A) \
+	gl_buf.clr[gl_buf.cl] = R; gl_buf.clr[gl_buf.cl+1] = G; \
+	gl_buf.clr[gl_buf.cl+2] = B; gl_buf.clr[gl_buf.cl+3] = A; gl_buf.cl += 4;
+
 void R_ApplyGLBuffer(void);
 void R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, float alpha);
 void R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	GLfloat ul_tx, GLfloat ul_ty, GLfloat dr_tx, GLfloat dr_ty);
 void R_SetBufferIndices(GLenum type, GLuint vertices_num);
-void R_BufferVertex(GLfloat x, GLfloat y, GLfloat z);
-void R_BufferSingleTex(GLfloat s, GLfloat t);
-void R_BufferMultiTex(GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt);
-void R_BufferColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 
 #ifdef YQ2_GL1_GLES
 #define glPolygonMode(...)

@@ -29,54 +29,30 @@
 
 #include "header/local.h"
 
+#define GLBUFFER_RESET	vtx_ptr = idx_ptr = 0; gl_buf.vt = gl_buf.tx = gl_buf.cl = 0;
+#define DYNAMIC_COPIES	(MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
+
+typedef struct
+{
+	int top, bottom, left, right;
+} lmrect_t;
+
 extern gllightmapstate_t gl_lms;
 
-void R_SetCacheState(msurface_t *surf);
-void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
-
-#define DYNAMIC_COPIES	(MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
-
-/*
-#define MAX_VERTICES	16384
-#define MAX_INDICES 	(MAX_VERTICES * 4)
-#define DYNAMIC_COPIES	(MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
-
-typedef struct	//	832k aprox.
-{
-	buffered_draw_t	type;
-
-	GLfloat
-		vtx[MAX_VERTICES * 3],	// vertexes
-		tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2],	// texture coords
-		clr[MAX_VERTICES * 4];	// color components
-
-	GLushort idx[MAX_INDICES];	// indices
-		// vtx_ptr, idx_ptr;	// pointers for array positions
-
-	GLuint vt, tx, cl;	// indices for arrays above
-
-	int	texture[MAX_TEXTURE_UNITS];
-	int	flags;	// entity flags
-	float	alpha;
-} glbuffer_t;
-*/
-
-// extern glbuffer_t gl_buf;
-
-GLushort vtx_ptr, idx_ptr;	// pointers for array positions
-
-// GLuint vt, tx, cl;	// indices for arrays in gl_buf
-
-qboolean dynamic_frame[MAX_LIGHTMAPS];	// is the lightmap affected by dynlights this frame
-int cur_lm_copy;		// which lightmap copy to use (when lightmapcopies=on)
-
+extern void R_SetCacheState(msurface_t *surf);
+extern void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 extern void R_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+
+glbuffer_t gl_buf;	// our drawing buffer, used globally
+
+static GLushort vtx_ptr, idx_ptr;	// pointers for array positions in gl_buf
+static qboolean dynamic_frame[MAX_LIGHTMAPS];	// is the lightmap affected by dynlights this frame
+static int cur_lm_copy;		// which lightmap copy to use (when lightmapcopies=on)
 
 void
 R_ResetGLBuffer(void)
 {
-	vtx_ptr = idx_ptr = 0;
-	gl_buf.vt = gl_buf.tx = gl_buf.cl = 0;
+	GLBUFFER_RESET
 }
 
 void
@@ -308,7 +284,7 @@ R_ApplyGLBuffer(void)
 		}
 	}
 
-	R_ResetGLBuffer();
+	GLBUFFER_RESET
 }
 
 void
@@ -335,14 +311,11 @@ R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 {
 	static const GLushort idx_max = MAX_INDICES - 7;
 	static const GLushort vtx_max = MAX_VERTICES - 5;
-	// unsigned int i;
 
 	if (idx_ptr > idx_max || vtx_ptr > vtx_max)
 	{
 		R_ApplyGLBuffer();
 	}
-
-	// i = vtx_ptr * 2;      // vertex index
 
 	// "Quad" = 2-triangle GL_TRIANGLE_FAN
 	gl_buf.idx[idx_ptr]   = vtx_ptr;
@@ -428,87 +401,12 @@ R_SetBufferIndices(GLenum type, GLuint vertices_num)
 			return;
 	}
 
-	// These affect the functions that follow in this file
-	// vt = gl_buf.vtx_ptr * 3;	// vertex index
-	// tx = gl_buf.vtx_ptr * 2;	// texcoord index
-	// cl = gl_buf.vtx_ptr * 4;	// color index
-
-	// R_BufferVertex() must be called as many times as vertices_num
+	// GLBUFFER_VERTEX() must be called as many times as vertices_num
 	vtx_ptr += vertices_num;
 }
 
-/*
- * Adds a single vertex to buffer
- */
-void
-R_BufferVertex(GLfloat x, GLfloat y, GLfloat z)
-{
-	gl_buf.vtx[gl_buf.vt]   = x;
-	gl_buf.vtx[gl_buf.vt+1] = y;
-	gl_buf.vtx[gl_buf.vt+2] = z;
-	gl_buf.vt += 3;
-}
 
-/*
- * Adds texture coordinates for color texture (no lightmap coords)
- */
-void
-R_BufferSingleTex(GLfloat s, GLfloat t)
-{
-	// tx should be set before this is called, by R_SetBufferIndices
-	gl_buf.tex[0][gl_buf.tx]   = s;
-	gl_buf.tex[0][gl_buf.tx+1] = t;
-	gl_buf.tx += 2;
-}
-
-/*
- * Adds texture coordinates for color and lightmap
- */
-void
-R_BufferMultiTex(GLfloat cs, GLfloat ct, GLfloat ls, GLfloat lt)
-{
-	gl_buf.tex[0][gl_buf.tx]   = cs;
-	gl_buf.tex[0][gl_buf.tx+1] = ct;
-	gl_buf.tex[1][gl_buf.tx]   = ls;
-	gl_buf.tex[1][gl_buf.tx+1] = lt;
-	gl_buf.tx += 2;
-}
-
-/*
- * Adds color components of vertex
- */
-void
-R_BufferColor(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
-{
-	gl_buf.clr[gl_buf.cl]   = r;
-	gl_buf.clr[gl_buf.cl+1] = g;
-	gl_buf.clr[gl_buf.cl+2] = b;
-	gl_buf.clr[gl_buf.cl+3] = a;
-	gl_buf.cl += 4;
-}
-
-
-/* Helper functions for R_RegenAllLightmaps() */
-
-typedef struct
-{
-	int top, bottom, left, right;
-	// qboolean altered;
-} lmrect_t;
-
-/*
-static lmrect_t
-R_JoinAreas(lmrect_t first, lmrect_t second)
-{
-	lmrect_t result;
-	result.top = (first.top < second.top)? first.top : second.top;
-	result.bottom = (first.bottom > second.bottom)? first.bottom : second.bottom;
-	result.left = (first.left < second.left)? first.left : second.left;
-	result.right = (first.right > second.right)? first.right : second.right;
-	return result;
-}
-*/
-
+/* Add "adding" area to "obj" */
 static void
 R_JoinAreas(lmrect_t *adding, lmrect_t *obj)
 {
@@ -529,54 +427,6 @@ R_JoinAreas(lmrect_t *adding, lmrect_t *obj)
 		obj->right = adding->right;
 	}
 }
-
-/*
-# ifdef YQ2_GL1_GLES
-
-static void
-R_PixelStoreWrapper(int unpack_len)
-{
-	// No GL_UNPACK_ROW_LENGTH parameter in GL ES 1 :(
-}
-
-static void
-R_SubImageWrapper(lmrect_t area, void *pixels)
-{
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, area.top,
-			gl_state.block_width, area.bottom - area.top,
-			GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, pixels);
-}
-
-static unsigned int
-R_LightmapOffset(int top, int left)
-{
-	return top * gl_state.block_width;
-}
-
-# else
-
-static void
-R_PixelStoreWrapper(int unpack_len)
-{
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, unpack_len);
-}
-
-static void
-R_SubImageWrapper(lmrect_t area, void *pixels)
-{
-	glTexSubImage2D(GL_TEXTURE_2D, 0, area.left, area.top,
-			area.right - area.left, area.bottom - area.top,
-			GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, pixels);
-}
-
-static int
-R_LightmapOffset(int top, int left)
-{
-	return top * gl_state.block_width + left;
-}
-
-# endif
-*/
 
 /* Upload dynamic lights to each lightmap texture (multitexture path only) */
 void
@@ -738,22 +588,6 @@ dynamic_surf:
 			best.right - best.left, best.bottom - best.top,
 			GL_LIGHTMAP_FORMAT, GL_UNSIGNED_BYTE, base);
 #endif
-
-		/*
-		base += R_LightmapOffset(upload.top, upload.left) * LIGHTMAP_BYTES;
-
-		R_Bind(gl_state.lightmap_textures + i + lmtex);
-		R_SubImageWrapper(upload, base);
-		*/
-
-		/*
-		if (gl_config.lightmapcopies)
-		{
-			// Changes for next frame(s)
-			lmchange[cc][i] = best;
-			altered[cc][i] = true;
-		}
-		*/
 	}
 
 #ifndef YQ2_GL1_GLES
