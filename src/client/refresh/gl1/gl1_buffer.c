@@ -30,7 +30,6 @@
 #include "header/local.h"
 
 #define GLBUFFER_RESET	vtx_ptr = idx_ptr = 0; gl_buf.vt = gl_buf.tx = gl_buf.cl = 0;
-#define DYNAMIC_COPIES	(MAX_LIGHTMAP_COPIES - 1)	// last one is the static lightmap
 
 typedef struct
 {
@@ -193,13 +192,11 @@ R_ApplyGLBuffer(void)
 		if (mtex)
 		{
 			// TMU 1: Lightmap texture
-			// Lightmap copies: we check here if it's static or dynamic
-			const int ct = gl_buf.texture[1];
-			int lmtexture = gl_state.lightmap_textures + ct;
-			if (gl_config.lightmapcopies && dynamic_frame[ct])
+			int lmtexture = gl_state.lightmap_textures + gl_buf.texture[1];
+			if (gl_config.lightmapcopies)
 			{
-				// Bind appropiate dynamic lightmap
-				lmtexture += gl_state.max_lightmaps * (cur_lm_copy + 1);
+				// Bind appropiate lightmap copy for this frame
+				lmtexture += gl_state.max_lightmaps * cur_lm_copy;
 			}
 			R_MBind(GL_TEXTURE1, lmtexture);
 
@@ -305,6 +302,7 @@ R_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex, int flags, fl
 	}
 }
 
+// ul = up left, dr = down right, v = vertex, t = texture, x/y = coords
 void
 R_Buffer2DQuad(GLfloat ul_vx, GLfloat ul_vy, GLfloat dr_vx, GLfloat dr_vy,
 	GLfloat ul_tx, GLfloat ul_ty, GLfloat dr_tx, GLfloat dr_ty)
@@ -432,11 +430,11 @@ R_JoinAreas(lmrect_t *adding, lmrect_t *obj)
 void
 R_RegenAllLightmaps()
 {
-	static lmrect_t lmchange[DYNAMIC_COPIES][MAX_LIGHTMAPS];
-	static qboolean altered[DYNAMIC_COPIES][MAX_LIGHTMAPS];
+	static lmrect_t lmchange[MAX_LIGHTMAP_COPIES][MAX_LIGHTMAPS];
+	static qboolean altered[MAX_LIGHTMAP_COPIES][MAX_LIGHTMAPS];
 
 	int i, map, smax, tmax, cc, lmtex;
-	lmrect_t changed = {0}, current, best;
+	lmrect_t current, best;
 	msurface_t *surf;
 	byte *base;
 #ifndef YQ2_GL1_GLES
@@ -451,37 +449,18 @@ R_RegenAllLightmaps()
 	cc = lmtex = 0;
 	if (gl_config.lightmapcopies)
 	{
-		cur_lm_copy = (cur_lm_copy + 1) % DYNAMIC_COPIES;	// alternate between calls
+		cur_lm_copy = (cur_lm_copy + 1) % MAX_LIGHTMAP_COPIES;	// alternate between calls
 		cc = cur_lm_copy;
-		lmtex = gl_state.max_lightmaps * (cc + 1);
+		lmtex = gl_state.max_lightmaps * cur_lm_copy;
 	}
 
 	for (i = 1; i < gl_state.max_lightmaps; i++)
 	{
 		dynamic_frame[i] = false;
 
-		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[0][i])
+		if (!gl_lms.lightmap_surfaces[i] || !gl_lms.lightmap_buffer[i])
 		{
 			continue;
-		}
-
-		if (gl_config.lightmapcopies)
-		{
-			changed = lmchange[cc][i];
-
-			// restore to static lightmap if it has been changed in the past
-			if (altered[cc][i])
-			{
-				int offset = (changed.top * gl_state.block_width + changed.left) * LIGHTMAP_BYTES;
-
-				memcpy( gl_lms.lightmap_buffer[cc][i] + offset,
-					gl_lms.lightmap_buffer[DYNAMIC_COPIES][i] + offset,
-					( (gl_state.block_width - changed.left) +
-					  (gl_state.block_width * (changed.bottom - changed.top - 2)) +
-					  changed.right ) * LIGHTMAP_BYTES );
-
-				altered[cc][i] = false;
-			}
 		}
 
 		best.top = gl_state.block_height;
@@ -506,9 +485,8 @@ R_RegenAllLightmaps()
 				}
 			}
 
-			// If not using lightmapcopies, doesn't matter if it is this frame
-			// or was in the previous one: surface has dynamic lights
-			if ( surf->dlightframe == r_framecount || ( !gl_config.lightmapcopies && surf->dirty_lightmap ) )
+			// Doesn't matter if it is this frame or was in the previous one: surface has dynamic lights
+			if ( surf->dlightframe == r_framecount || surf->dirty_lightmap )
 			{
 				goto dynamic_surf;
 			}
@@ -525,7 +503,7 @@ dynamic_surf:
 			current.top = surf->light_t;
 			current.bottom = surf->light_t + tmax;
 
-			base = gl_lms.lightmap_buffer[cc][i];
+			base = gl_lms.lightmap_buffer[i];
 			base += (current.top * gl_state.block_width + current.left) * LIGHTMAP_BYTES;
 
 			R_BuildLightMap(surf, base, gl_state.block_width * LIGHTMAP_BYTES);
@@ -536,17 +514,39 @@ dynamic_surf:
 				R_SetCacheState(surf);
 			}
 
-			if (!gl_config.lightmapcopies)
-			{
-				surf->dirty_lightmap = (surf->dlightframe == r_framecount);
-			}
-
+			surf->dirty_lightmap = (surf->dlightframe == r_framecount);
 			R_JoinAreas(&current, &best);
 		}
 
-		if (!dynamic_frame[i])
+		if (!gl_config.lightmapcopies && !dynamic_frame[i])
 		{
 			continue;
+		}
+
+		if (gl_config.lightmapcopies)
+		{
+			qboolean apply_changes = dynamic_frame[i];
+			current = best;		// save state for next frames... +
+
+			for (int k = 0; k < MAX_LIGHTMAP_COPIES; k++)
+			{
+				if (altered[k][i])
+				{
+					apply_changes = true;
+					R_JoinAreas(&lmchange[k][i], &best);
+				}
+			}
+
+			altered[cc][i] = dynamic_frame[i];
+			if (dynamic_frame[i])
+			{
+				lmchange[cc][i] = current;	// + ...here
+			}
+
+			if (!apply_changes)
+			{
+				continue;
+			}
 		}
 
 #ifndef YQ2_GL1_GLES
@@ -557,19 +557,7 @@ dynamic_surf:
 		}
 #endif
 
-		if (gl_config.lightmapcopies)
-		{
-			// Changes for next frame(s)
-			lmchange[cc][i] = best;
-			altered[cc][i] = true;
-
-			// Obtain the entire area to be updated in the next glTexSubImage2D
-			// Considers changes in the last frame to be reset with the static lightmap
-			// plus the new changes in this frame by dynamic lighting.
-			R_JoinAreas(&changed, &best);
-		}
-
-		base = gl_lms.lightmap_buffer[cc][i];
+		base = gl_lms.lightmap_buffer[i];
 
 #ifdef YQ2_GL1_GLES
 		base += (best.top * gl_state.block_width) * LIGHTMAP_BYTES;

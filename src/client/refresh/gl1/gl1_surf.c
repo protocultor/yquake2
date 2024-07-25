@@ -42,7 +42,7 @@ qboolean LM_AllocBlock(int w, int h, int *x, int *y);
 void R_SetCacheState(msurface_t *surf);
 void R_BuildLightMap(msurface_t *surf, byte *dest, int stride);
 
-void R_RegenAllLightmaps(void);
+extern void R_RegenAllLightmaps(void);
 
 static void
 R_DrawGLPoly(msurface_t *fa)
@@ -299,7 +299,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 
 			if (LM_AllocBlock(smax, tmax, &surf->dlight_s, &surf->dlight_t))
 			{
-				base = gl_lms.lightmap_buffer[0][0];
+				base = gl_lms.lightmap_buffer[0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
@@ -345,7 +345,7 @@ R_BlendLightmaps(const model_t *currentmodel)
 							smax, tmax);
 				}
 
-				base = gl_lms.lightmap_buffer[0][0];
+				base = gl_lms.lightmap_buffer[0];
 				base += (surf->dlight_t * gl_state.block_width +
 						surf->dlight_s) * LIGHTMAP_BYTES;
 
