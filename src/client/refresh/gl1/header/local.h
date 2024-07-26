@@ -432,6 +432,7 @@ typedef struct
 	qboolean pointparameters;
 	qboolean multitexture;
 	qboolean lightmapcopies;	// many copies of same lightmap; tile rendering platforms
+	qboolean discardfb;
 
 	// ----
 
