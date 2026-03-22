@@ -156,6 +156,7 @@ RDraw_PicScaled(int x, int y, const char *pic, float factor)
 		return;
 	}
 
+	R_ApplyGLBuffer();	// respect drawing order
 	R_Bind(gl->texnum);
 
 	GLfloat vtx[] = {
