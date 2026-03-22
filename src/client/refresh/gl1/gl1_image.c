@@ -78,8 +78,6 @@ glmode_t modes[] = {
 	{"GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR}
 };
 
-#define NUM_GL_MODES ARRLEN(modes)
-
 typedef struct
 {
 	char *name;
@@ -273,10 +271,11 @@ R_EnableMultitexture(qboolean enable)
 void
 R_TextureMode(const char *string)
 {
+	static const int num_modes = ARRLEN(modes);
 	int i;
 	image_t *glt;
 
-	for (i = 0; i < NUM_GL_MODES; i++)
+	for (i = 0; i < num_modes; i++)
 	{
 		if (!Q_stricmp(modes[i].name, string))
 		{
@@ -284,9 +283,9 @@ R_TextureMode(const char *string)
 		}
 	}
 
-	if (i == NUM_GL_MODES)
+	if (i == num_modes)
 	{
-		Com_Printf("bad filter name\n");
+		Com_Printf("bad filter name '%s'\n", string);
 		return;
 	}
 
