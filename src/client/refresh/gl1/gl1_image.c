@@ -42,10 +42,6 @@ unsigned d_8to24table[256];
 extern cvar_t *gl1_minlight;
 extern unsigned char minlight[256];
 
-qboolean R_Upload8(byte *data, int width, int height,
-		qboolean mipmap, qboolean is_sky);
-qboolean R_Upload32(unsigned *data, int width, int height, qboolean mipmap);
-
 #define Q2_GL_SOLID_FORMAT GL_RGB
 #define Q2_GL_ALPHA_FORMAT GL_RGBA
 
@@ -167,7 +163,7 @@ R_SetTexturePalette(const unsigned palette[256])
 	}
 }
 
-void
+static void
 R_SelectTexture(GLenum texture)
 {
 	if (!gl_config.multitexture || gl_state.currenttarget == texture)
@@ -838,7 +834,7 @@ done:
 	return samples == Q2_GL_ALPHA_FORMAT;
 }
 
-qboolean
+static qboolean
 R_Upload32(unsigned *data, int width, int height, qboolean mipmap)
 {
 	qboolean res;

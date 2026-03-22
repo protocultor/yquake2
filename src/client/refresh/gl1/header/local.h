@@ -261,7 +261,6 @@ extern unsigned char gammatable[256];
 qboolean R_Bind(int texnum);
 
 void R_TexEnv(GLenum value);
-void R_SelectTexture(GLenum);
 void R_MBind(GLenum target, int texnum);
 void R_EnableMultitexture(qboolean enable);
 

@@ -31,11 +31,9 @@ static int scrap_allocated[MAX_SCRAPS][SCRAP_WIDTH];
 byte scrap_texels[MAX_SCRAPS][SCRAP_WIDTH * SCRAP_HEIGHT];
 qboolean scrap_dirty;
 
-qboolean R_Upload8(byte *data,
-		int width,
-		int height,
-		qboolean mipmap,
-		qboolean is_sky);
+extern qboolean R_Upload8(byte *data,
+		int width, int height,
+		qboolean mipmap, qboolean is_sky);
 
 /* returns a texture number and the position inside it */
 int
