@@ -312,6 +312,47 @@ enum {MAX_GL3TEXTURES = 1024};
 // include this down here so it can use gl3image_t
 #include "model.h"
 
+// Buffer to group multiple OpenGL calls into one
+enum
+{
+	MAX_TEXTURE_UNITS = 2,	// 1,2,3 should use the same texcoords
+	MAX_VERTICES = 16384,
+	MAX_INDICES = (MAX_VERTICES * 4)
+};
+
+typedef enum
+{
+	buf_2d
+} buffered_draw_t;
+
+typedef struct
+{
+	buffered_draw_t	type;
+
+	// cambiamos esto por un puntero genérico ????
+	GLfloat data2D[MAX_VERTICES * 4];	// X, Y, S, T
+
+	// gl3_3D_vtx_t data3D[MAX_VERTICES];
+
+	// gl3_3D_vtx_t dataAlias[MAX_VERTICES];
+
+/*
+	GLfloat
+		vtx[MAX_VERTICES * 3],	// vertexes
+		tex[MAX_TEXTURE_UNITS][MAX_VERTICES * 2];	// texture coords
+
+	GLubyte	clr[MAX_VERTICES * 4];	// color components
+*/
+
+	GLushort idx[MAX_INDICES];	// indices for the draw call
+
+	GLuint vt;	// index for data
+
+	int	texture[MAX_TEXTURE_UNITS];
+	int	flags;	// entity flags
+	float	alpha;
+} glbuffer_t;
+
 typedef struct
 {
 	int current_lightmap_texture; // index into gl3state.lightmap_textureIDs[]
@@ -505,6 +546,14 @@ extern void GL3_UpdateUBOCommon(void);
 extern void GL3_UpdateUBO2D(void);
 extern void GL3_UpdateUBO3D(void);
 extern void GL3_UpdateUBOLights(void);
+
+// gl3_buffer.c
+
+extern void GL3_ApplyGLBuffer(void);
+extern void GL3_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex,
+	int flags, float alpha);
+extern void GL3_Buffer2DQuad(float x, float y, float w, float h,
+	float sl, float tl, float sh, float th);
 
 // ############ Cvars ###########
 
