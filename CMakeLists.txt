@@ -652,6 +652,7 @@ set(GL3-Source
 	${REF_SRC_DIR}/gl3/gl3_surf.c
 	${REF_SRC_DIR}/gl3/gl3_warp.c
 	${REF_SRC_DIR}/gl3/gl3_shaders.c
+	${REF_SRC_DIR}/gl3/gl3_buffer.c
 	${REF_SRC_DIR}/files/common.c
 	${REF_SRC_DIR}/files/models.c
 	${REF_SRC_DIR}/files/pcx.c

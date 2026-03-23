@@ -1142,6 +1142,7 @@ REFGL3_OBJS_ := \
 	src/client/refresh/gl3/gl3_surf.o \
 	src/client/refresh/gl3/gl3_warp.o \
 	src/client/refresh/gl3/gl3_shaders.o \
+	src/client/refresh/gl3/gl3_buffer.o \
 	src/client/refresh/files/common.o \
 	src/client/refresh/files/surf.o \
 	src/client/refresh/files/models.o \

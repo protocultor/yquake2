@@ -117,6 +117,8 @@ DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
  */
 void GL3_EndFrame(void)
 {
+	GL3_ApplyGLBuffer();	// to draw buffered 2D text
+
 	if(gl3config.useBigVBO)
 	{
 		// I think this is a good point to orphan the VBO and get a fresh one

@@ -1324,6 +1324,16 @@ R_Register(void)
 #undef GLES1_ENABLED_ONLY
 
 /*
+ * Needed in the SetMode functions below
+ */
+typedef enum
+{
+	rserr_ok,
+	rserr_invalid_mode,
+	rserr_unknown
+} rserr_t;
+
+/*
  * Changes the video mode
  */
 static int

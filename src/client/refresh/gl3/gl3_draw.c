@@ -31,7 +31,8 @@ unsigned d_8to24table[256];
 
 gl3image_t *draw_chars;
 
-static GLuint vbo2D = 0, vao2D = 0, vao2Dcolor = 0; // vao2D is for textured rendering, vao2Dcolor for color-only
+GLuint vbo2D = 0, vao2D = 0, ebo2D = 0;
+static GLuint vao2Dcolor = 0; // vao2D is for textured rendering, vao2Dcolor for color-only
 
 void
 GL3_Draw_InitLocal(void)
@@ -60,6 +61,8 @@ GL3_Draw_InitLocal(void)
 
 	glEnableVertexAttribArray(GL3_ATTRIB_TEXCOORD);
 	qglVertexAttribPointer(GL3_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 4*sizeof(float), 2*sizeof(float));
+
+	glGenBuffers(1, &ebo2D);	// for 'buffer' usage
 
 	// set up attribute layout for 2D flat color rendering
 
@@ -153,11 +156,18 @@ GL3_Draw_CharScaled(int x, int y, int num, float scale)
 
 	scaledSize = 8*scale;
 
+	GL3_UpdateGLBuffer(buf_2d, draw_chars->texnum, 0, 0, 1);
+
+	GL3_Buffer2DQuad(x, y, scaledSize, scaledSize,
+		fcol, frow, fcol + size, frow + size);
+
+	/*
 	// TODO: batchen?
 
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
 	GL3_Bind(draw_chars->texnum);
 	drawTexturedRectangle(x, y, scaledSize, scaledSize, fcol, frow, fcol+size, frow+size);
+	*/
 }
 
 gl3image_t *
@@ -367,6 +377,7 @@ GL3_Draw_Flash(const float color[4], float x, float y, float w, float h)
 void
 GL3_Draw_FadeScreen(void)
 {
+	GL3_ApplyGLBuffer();
 	float color[4] = {0, 0, 0, 0.6f};
 	GL3_Draw_Flash(color, 0, 0, vid.width, vid.height);
 }

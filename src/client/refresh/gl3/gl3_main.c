@@ -1766,6 +1766,7 @@ GL3_SetLightLevel(entity_t *currententity)
 static void
 GL3_RenderFrame(refdef_t *fd)
 {
+	GL3_ApplyGLBuffer();	// menu rendering when needed
 	GL3_RenderView(fd);
 	GL3_SetLightLevel(NULL);
 	qboolean usedFBO = gl3state.ppFBObound; // if it was/is used this frame
