@@ -162,8 +162,8 @@ GL3_Draw_CharScaled(int x, int y, int num, float scale)
 		fcol, frow, fcol + size, frow + size);
 
 	/*
-	// TODO: batchen?
-
+	// DONE: batchen!
+	// Formerly did:
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
 	GL3_Bind(draw_chars->texnum);
 	drawTexturedRectangle(x, y, scaledSize, scaledSize, fcol, frow, fcol+size, frow+size);

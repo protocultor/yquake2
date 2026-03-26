@@ -115,7 +115,8 @@ GL3_UpdateGLBuffer(buffered_draw_t type, int colortex, int lighttex,
 
 /*
  * Stores a 2D drawing in the buffer.
-  */
+ * Same parameters as drawTexturedRectangle() in gl3_draw.c.
+ */
 void
 GL3_Buffer2DQuad(float x, float y, float w, float h,
 			float sl, float tl, float sh, float th)
@@ -128,13 +129,13 @@ GL3_Buffer2DQuad(float x, float y, float w, float h,
 		GL3_ApplyGLBuffer();
 	}
 
-	// "Quad" = 2-triangle GL_TRIANGLE_FAN
+	// In GL3, a "quad" is... a GL_TRIANGLE_STRIP (?)
 	gl_buf.idx[idx_ptr]   = vtx_ptr;
 	gl_buf.idx[idx_ptr+1] = vtx_ptr+1;
 	gl_buf.idx[idx_ptr+2] = vtx_ptr+2;
-	gl_buf.idx[idx_ptr+3] = vtx_ptr;
+	gl_buf.idx[idx_ptr+3] = vtx_ptr+3;
 	gl_buf.idx[idx_ptr+4] = vtx_ptr+2;
-	gl_buf.idx[idx_ptr+5] = vtx_ptr+3;
+	gl_buf.idx[idx_ptr+5] = vtx_ptr+1;
 	idx_ptr += 6;
 
 	// Data
