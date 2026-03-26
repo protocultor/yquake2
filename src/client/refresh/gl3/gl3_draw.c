@@ -34,6 +34,8 @@ gl3image_t *draw_chars;
 GLuint vbo2D = 0, vao2D = 0, ebo2D = 0;
 static GLuint vao2Dcolor = 0; // vao2D is for textured rendering, vao2Dcolor for color-only
 
+extern void GL3_Scrap_Upload(void);
+
 void
 GL3_Draw_InitLocal(void)
 {
@@ -204,6 +206,7 @@ GL3_Draw_StretchPic(int x, int y, int w, int h, const char *pic)
 		return;
 	}
 
+	GL3_Scrap_Upload();
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
 	GL3_Bind(gl->texnum);
 
@@ -220,6 +223,7 @@ GL3_Draw_PicScaled(int x, int y, const char *pic, float factor)
 		return;
 	}
 
+	GL3_Scrap_Upload();
 	GL3_UseProgram(gl3state.si2D.shaderProgram);
 	GL3_Bind(gl->texnum);
 
@@ -235,6 +239,8 @@ GL3_Draw_PicScaledCol(int x, int y, const char *pic, float factor, const float c
 		Com_Printf("Can't find pic: %s\n", pic);
 		return;
 	}
+
+	GL3_Scrap_Upload();
 
 	gl3state.uniCommonData.color = HMM_Vec4(color[0], color[1], color[2], 1.0f);
 	GL3_UpdateUBOCommon();

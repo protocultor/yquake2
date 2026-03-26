@@ -300,7 +300,6 @@ qboolean R_ImageHasFreeSpace(void);
 
 void R_TextureAlphaMode(const char *string);
 void R_TextureSolidMode(const char *string);
-int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
 // GL buffer operations
 
