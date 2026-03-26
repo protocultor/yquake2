@@ -132,6 +132,8 @@ cvar_t *gl3_usefbo;
 
 static cvar_t *gl_znear;
 
+extern void GL3_ResetGLBuffer(void);
+
 // Yaw-Pitch-Roll
 // equivalent to R_z * R_y * R_x where R_x is the trans matrix for rotating around X axis for aroundXdeg
 static hmm_mat4 rotAroundAxisZYX(float aroundZdeg, float aroundYdeg, float aroundXdeg)
@@ -659,6 +661,8 @@ GL3_Init(void)
 	GL3_Draw_InitLocal();
 
 	GL3_SurfInit();
+
+	GL3_ResetGLBuffer();
 
 	glGenFramebuffers(1, &gl3state.ppFBO);
 	// the rest for the FBO is done dynamically in GL3_RenderView() so it can
