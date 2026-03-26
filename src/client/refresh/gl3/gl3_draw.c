@@ -34,6 +34,7 @@ gl3image_t *draw_chars;
 GLuint vbo2D = 0, vao2D = 0, ebo2D = 0;
 static GLuint vao2Dcolor = 0; // vao2D is for textured rendering, vao2Dcolor for color-only
 
+extern GLuint gl3scrap_texnum;
 extern void GL3_Scrap_Upload(void);
 
 void
@@ -224,10 +225,18 @@ GL3_Draw_PicScaled(int x, int y, const char *pic, float factor)
 	}
 
 	GL3_Scrap_Upload();
-	GL3_UseProgram(gl3state.si2D.shaderProgram);
-	GL3_Bind(gl->texnum);
 
-	drawTexturedRectangle(x, y, gl->width*factor, gl->height*factor, gl->sl, gl->tl, gl->sh, gl->th);
+	if (gl->texnum == gl3scrap_texnum)
+	{
+		GL3_UpdateGLBuffer(buf_2d, gl3scrap_texnum, 0, 0, 1);
+		GL3_Buffer2DQuad(x, y, gl->width*factor, gl->height*factor, gl->sl, gl->tl, gl->sh, gl->th);
+	}
+	else
+	{
+		GL3_UseProgram(gl3state.si2D.shaderProgram);
+		GL3_Bind(gl->texnum);
+		drawTexturedRectangle(x, y, gl->width*factor, gl->height*factor, gl->sl, gl->tl, gl->sh, gl->th);
+	}
 }
 
 void
@@ -269,10 +278,8 @@ GL3_Draw_TileClear(int x, int y, int w, int h, const char *pic)
 		return;
 	}
 
-	GL3_UseProgram(gl3state.si2D.shaderProgram);
-	GL3_Bind(image->texnum);
-
-	drawTexturedRectangle(x, y, w, h, x/64.0f, y/64.0f, (x+w)/64.0f, (y+h)/64.0f);
+	GL3_UpdateGLBuffer(buf_2d, image->texnum, 0, 0, 1);
+	GL3_Buffer2DQuad(x, y, w, h, x/64.0f, y/64.0f, (x+w)/64.0f, (y+h)/64.0f);
 }
 
 void
