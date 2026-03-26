@@ -29,8 +29,6 @@
 image_t gltextures[MAX_GLTEXTURES];
 int numgltextures;
 static int image_max = 0;
-extern qboolean scrap_dirty;
-extern byte scrap_texels[MAX_SCRAPS][SCRAP_WIDTH * SCRAP_HEIGHT];
 
 static byte intensitytable[256];
 unsigned char gammatable[256];
@@ -41,6 +39,11 @@ unsigned d_8to24table[256];
 
 extern cvar_t *gl1_minlight;
 extern unsigned char minlight[256];
+
+extern qboolean scrap_dirty;
+extern byte scrap_texels[MAX_SCRAPS][SCRAP_WIDTH * SCRAP_HEIGHT];
+
+extern int Scrap_AllocBlock(int w, int h, int *x, int *y);
 
 #define Q2_GL_SOLID_FORMAT GL_RGB
 #define Q2_GL_ALPHA_FORMAT GL_RGBA

@@ -29,7 +29,7 @@
 image_t *draw_chars;
 
 extern qboolean scrap_dirty;
-void Scrap_Upload(void);
+extern void Scrap_Upload(void);
 
 extern unsigned r_rawpalette[256];
 

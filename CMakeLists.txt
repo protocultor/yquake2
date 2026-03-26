@@ -649,6 +649,7 @@ set(GL3-Source
 	${REF_SRC_DIR}/gl3/gl3_misc.c
 	${REF_SRC_DIR}/gl3/gl3_model.c
 	${REF_SRC_DIR}/gl3/gl3_sdl.c
+	${REF_SRC_DIR}/gl3/gl3_scrap.c
 	${REF_SRC_DIR}/gl3/gl3_surf.c
 	${REF_SRC_DIR}/gl3/gl3_warp.c
 	${REF_SRC_DIR}/gl3/gl3_shaders.c

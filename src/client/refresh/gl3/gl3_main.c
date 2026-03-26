@@ -124,14 +124,16 @@ cvar_t *r_modulate;
 cvar_t *gl_lightmap;
 cvar_t *gl_shadows;
 cvar_t *gl3_debugcontext;
-cvar_t *gl3_usebigvbo;
 cvar_t *r_fixsurfsky;
 cvar_t *r_palettedtexture;
 cvar_t *r_validation;
-cvar_t *gl3_usefbo;
+cvar_t *gl3_scrap;
 
+static cvar_t *gl3_usebigvbo;
+static cvar_t *gl3_usefbo;
 static cvar_t *gl_znear;
 
+extern void GL3_Scrap_Init(void);
 extern void GL3_ResetGLBuffer(void);
 
 // Yaw-Pitch-Roll
@@ -270,6 +272,7 @@ GL3_Register(void)
 	gl_znear = ri.Cvar_Get("gl_znear", "4", CVAR_ARCHIVE);
 
 	gl3_usefbo = ri.Cvar_Get("gl3_usefbo", "1", CVAR_ARCHIVE); // use framebuffer object for postprocess effects (water)
+	gl3_scrap = ri.Cvar_Get("gl3_scrap", "1", CVAR_ARCHIVE);
 
 #if 0 // TODO!
 	//gl_lefthand = ri.Cvar_Get("hand", "0", CVAR_USERINFO | CVAR_ARCHIVE);
@@ -653,6 +656,8 @@ GL3_Init(void)
 	}
 
 	registration_sequence = 1; // from R_InitImages() (everything else from there shouldn't be needed anymore)
+
+	GL3_Scrap_Init();
 
 	GL3_Mod_Init();
 
